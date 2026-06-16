@@ -1,0 +1,357 @@
+<?php
+/**
+ * GOL (Gugle Online Learning) - API AJAX Centralisée
+ * Développeur: ESSENGUE BILOA VICTORIEN MICHEL
+ * Matricule: 23U2628
+ * Université de Yaoundé 1 - INF-L2
+ * 
+ * Tous les appels AJAX du site passent par ce fichier
+ */
+
+require_once 'includes/config.php';
+require_once 'includes/fonctions.php';
+
+// Forcer l'en-tête JSON
+header('Content-Type: application/json');
+
+// Vérifier si la requête est AJAX
+if (empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) != 'xmlhttprequest') {
+    echo json_encode(['success' => false, 'message' => 'Accès non autorisé']);
+    exit;
+}
+
+// Vérifier si l'utilisateur est connecté
+if (!estConnecte()) {
+    echo json_encode(['success' => false, 'message' => 'Session expirée. Veuillez vous reconnecter.']);
+    exit;
+}
+
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Récupérer les données JSON pour les requêtes POST
+$input = json_decode(file_get_contents('php://input'), true);
+if ($method === 'POST' && empty($_POST) && $input) {
+    $_POST = array_merge($_POST, $input);
+}
+
+$response = ['success' => false, 'message' => 'Action inconnue'];
+
+switch ($action) {
+    // ============================================
+    // GESTION DES DEMANDES DE MODIFICATION
+    // ============================================
+    
+    case 'approuver_demande':
+        if (estSuperAdmin() || estPromoteur()) {
+            $id_demande = $_POST['id_demande'] ?? 0;
+            if ($id_demande) {
+                $resultat = approuverDemandeModification($id_demande, $_SESSION['id_utilisateur']);
+                $response = $resultat;
+            } else {
+                $response = ['success' => false, 'message' => 'ID de demande manquant'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+        
+    case 'refuser_demande':
+        if (estSuperAdmin() || estPromoteur()) {
+            $id_demande = $_POST['id_demande'] ?? 0;
+            $commentaire = $_POST['commentaire'] ?? '';
+            if ($id_demande) {
+                $resultat = refuserDemandeModification($id_demande, $_SESSION['id_utilisateur'], $commentaire);
+                $response = ['success' => $resultat, 'message' => $resultat ? 'Demande refusée' : 'Erreur lors du refus'];
+            } else {
+                $response = ['success' => false, 'message' => 'ID de demande manquant'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    // ============================================
+    // GESTION DES MODULES (Super Admin)
+    // ============================================
+    
+    case 'supprimer_module':
+        if (estSuperAdmin()) {
+            $id_module = $_POST['id_module'] ?? 0;
+            if ($id_module) {
+                $resultat = supprimerModule($id_module);
+                $response = ['success' => $resultat, 'message' => $resultat ? 'Module supprimé' : 'Erreur lors de la suppression'];
+            } else {
+                $response = ['success' => false, 'message' => 'ID de module manquant'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    case 'toggle_module_statut':
+        if (estSuperAdmin() || estPromoteur()) {
+            $id_module = $_POST['id_module'] ?? 0;
+            if ($id_module) {
+                global $pdo;
+                $stmt = $pdo->prepare("UPDATE modules SET actif = NOT actif WHERE id_module = ?");
+                $resultat = $stmt->execute([$id_module]);
+                $response = ['success' => $resultat, 'message' => $resultat ? 'Statut modifié' : 'Erreur'];
+            } else {
+                $response = ['success' => false, 'message' => 'ID de module manquant'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    // ============================================
+    // GESTION DES UTILISATEURS (Super Admin)
+    // ============================================
+    
+    case 'toggle_user_status':
+        if (estSuperAdmin()) {
+            $id_utilisateur = $_POST['id_utilisateur'] ?? 0;
+            if ($id_utilisateur && $id_utilisateur != $_SESSION['id_utilisateur']) {
+                global $pdo;
+                $stmt = $pdo->prepare("UPDATE utilisateurs SET statut = IF(statut = 'actif', 'suspendu', 'actif') WHERE id_utilisateur = ?");
+                $resultat = $stmt->execute([$id_utilisateur]);
+                $response = ['success' => $resultat, 'message' => $resultat ? 'Statut utilisateur modifié' : 'Erreur'];
+            } else {
+                $response = ['success' => false, 'message' => 'Action non autorisée sur cet utilisateur'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    // ============================================
+    // SOUMISSION D'ÉVALUATION
+    // ============================================
+    
+    case 'soumettre_evaluation':
+        if (estEtudiant()) {
+            $id_evaluation = $_POST['evaluation_id'] ?? 0;
+            $reponses = $_POST['reponses'] ?? [];
+            $temps_consacre = $_POST['temps_consacre'] ?? null;
+            
+            if ($id_evaluation && !empty($reponses)) {
+                $resultat = enregistrerResultat($_SESSION['id_utilisateur'], $id_evaluation, $reponses, $temps_consacre);
+                $response = $resultat;
+            } else {
+                $response = ['success' => false, 'message' => 'Données manquantes'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    // ============================================
+    // MISE À JOUR DE LA PROGRESSION
+    // ============================================
+    
+    case 'maj_progression':
+        if (estEtudiant()) {
+            $id_lecon = $_POST['lecon_id'] ?? 0;
+            $terminee = $_POST['terminee'] ?? true;
+            
+            if ($id_lecon && $terminee) {
+                $resultat = marquerLeconTerminee($_SESSION['id_utilisateur'], $id_lecon);
+                
+                // Récupérer le nouveau pourcentage
+                global $pdo;
+                $stmt = $pdo->prepare("
+                    SELECT pourcentage FROM progression_cours 
+                    WHERE id_utilisateur = ? AND id_cours = (
+                        SELECT id_cours FROM lecons WHERE id_lecon = ?
+                    )
+                ");
+                $stmt->execute([$_SESSION['id_utilisateur'], $id_lecon]);
+                $progression = $stmt->fetch();
+                
+                $response = [
+                    'success' => $resultat, 
+                    'pourcentage' => $progression['pourcentage'] ?? 0,
+                    'message' => $resultat ? 'Progression mise à jour' : 'Erreur'
+                ];
+            } else {
+                $response = ['success' => false, 'message' => 'Données manquantes'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    // ============================================
+    // RECHERCHE EN TEMPS RÉEL
+    // ============================================
+    
+    case 'recherche':
+        $terme = $_GET['q'] ?? $_POST['q'] ?? '';
+        if (strlen($terme) >= 2) {
+            $resultats = rechercherGlobal($terme);
+            $response = ['success' => true, 'data' => $resultats];
+        } else {
+            $response = ['success' => true, 'data' => ['modules' => [], 'cours' => [], 'lecons' => []]];
+        }
+        break;
+    
+    // ============================================
+    // NOTIFICATIONS
+    // ============================================
+    
+    case 'marquer_notification_lue':
+        $id_notification = $_POST['id_notification'] ?? 0;
+        if ($id_notification) {
+            $resultat = marquerNotificationLue($id_notification);
+            $response = ['success' => $resultat];
+        } else {
+            $response = ['success' => false, 'message' => 'ID manquant'];
+        }
+        break;
+    
+    case 'obtenir_notifications':
+        $notifications = obtenirNotificationsNonLues($_SESSION['id_utilisateur']);
+        $response = ['success' => true, 'data' => $notifications, 'count' => count($notifications)];
+        break;
+    
+    // ============================================
+    // STATISTIQUES (Dashboard)
+    // ============================================
+    
+    case 'statistiques_globales':
+        if (estSuperAdmin() || estPromoteur()) {
+            $stats = obtenirStatistiquesPromoteur();
+            $response = ['success' => true, 'data' => $stats];
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    case 'statistiques_utilisateur':
+        if (estEtudiant()) {
+            $stats = obtenirStatistiquesEtudiant($_SESSION['id_utilisateur']);
+            $response = ['success' => true, 'data' => $stats];
+        } elseif (estEnseignant()) {
+            $stats = obtenirStatistiquesEnseignant($_SESSION['id_utilisateur']);
+            $response = ['success' => true, 'data' => $stats];
+        } else {
+            $response = ['success' => false, 'message' => 'Action non disponible'];
+        }
+        break;
+    
+    // ============================================
+    // CERTIFICATS
+    // ============================================
+    
+    case 'generer_certificat':
+        if (estEtudiant()) {
+            $id_module = $_POST['id_module'] ?? 0;
+            if ($id_module) {
+                $certificat = genererCertificat($_SESSION['id_utilisateur'], $id_module);
+                $response = ['success' => !empty($certificat), 'data' => $certificat];
+                if (empty($certificat)) {
+                    $response['message'] = 'Module non complété à 100%';
+                }
+            } else {
+                $response = ['success' => false, 'message' => 'ID module manquant'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+    
+    // ============================================
+    // PROFIL - CHARGEMENT AVATAR
+    // ============================================
+    
+    case 'upload_avatar':
+        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+            $resultat = uploadFichier($_FILES['avatar'], UPLOAD_AVATARS, ['jpg', 'jpeg', 'png', 'gif', 'svg']);
+            if ($resultat['success']) {
+                global $pdo;
+                $stmt = $pdo->prepare("UPDATE utilisateurs SET avatar = ? WHERE id_utilisateur = ?");
+                $stmt->execute([$resultat['fichier'], $_SESSION['id_utilisateur']]);
+                $response = ['success' => true, 'avatar' => $resultat['fichier'], 'message' => 'Avatar mis à jour'];
+            } else {
+                $response = $resultat;
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Aucun fichier reçu'];
+        }
+        break;
+        
+        case 'obtenir_certificat':
+            $id_certificat = $_GET['id'] ?? 0;
+            if ($id_certificat) {
+                $stmt = $pdo->prepare("
+                    SELECT c.*, u.nom, u.prenom, u.email, m.nom_module
+                    FROM certificats c
+                    JOIN utilisateurs u ON c.id_utilisateur = u.id_utilisateur
+                    JOIN modules m ON c.id_module = m.id_module
+                    WHERE c.id_certificat = ? AND (c.id_utilisateur = ? OR ?)
+                ");
+                $stmt->execute([$id_certificat, $_SESSION['id_utilisateur'], estSuperAdmin() || estPromoteur()]);
+                $certificat = $stmt->fetch();
+                
+                if ($certificat) {
+                    $response = ['success' => true, 'data' => $certificat];
+                } else {
+                    $response = ['success' => false, 'message' => 'Certificat non trouvé'];
+                }
+            } else {
+                $response = ['success' => false, 'message' => 'ID manquant'];
+            }
+        break;
+
+        case 'generer_certificat':
+            if (estEtudiant()) {
+                $id_module = $_POST['id_module'] ?? 0;
+                if ($id_module) {
+                    $certificat = genererCertificat($_SESSION['id_utilisateur'], $id_module);
+                    $response = ['success' => !empty($certificat), 'data' => $certificat];
+                    if (empty($certificat)) {
+                        $response['message'] = 'Module non complété à 100%';
+                    }
+                } else {
+                    $response = ['success' => false, 'message' => 'ID module manquant'];
+                }
+            } else {
+                $response = ['success' => false, 'message' => 'Permission refusée'];
+            }
+            break;
+        
+        case 'obtenir_certificat':
+            $id_certificat = $_GET['id'] ?? 0;
+            if ($id_certificat) {
+                $stmt = $pdo->prepare("
+                    SELECT c.*, u.nom, u.prenom, u.email, m.nom_module
+                    FROM certificats c
+                    JOIN utilisateurs u ON c.id_utilisateur = u.id_utilisateur
+                    JOIN modules m ON c.id_module = m.id_module
+                    WHERE c.id_certificat = ? AND c.id_utilisateur = ?
+                ");
+                $stmt->execute([$id_certificat, $_SESSION['id_utilisateur']]);
+                $certificat = $stmt->fetch();
+                
+                if ($certificat) {
+                    $response = ['success' => true, 'data' => $certificat];
+                } else {
+                    $response = ['success' => false, 'message' => 'Certificat non trouvé'];
+                }
+            } else {
+                $response = ['success' => false, 'message' => 'ID manquant'];
+            }
+            break;
+    // ============================================
+    // ACTION PAR DÉFAUT
+    // ============================================
+    
+    default:
+        $response = ['success' => false, 'message' => 'Action non reconnue'];
+        break;
+}
+
+echo json_encode($response);
+exit;
+?>
