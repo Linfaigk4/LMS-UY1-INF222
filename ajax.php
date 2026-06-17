@@ -344,9 +344,196 @@ switch ($action) {
             }
             break;
     // ============================================
+    // GESTION QUIZ — CRUD ENSEIGNANT
+    // ============================================
+
+    case 'ajouter_evaluation':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_lecon    = (int)($_POST['id_lecon'] ?? 0);
+        $titre       = trim($_POST['titre'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $note        = (float)($_POST['note_requise'] ?? 60);
+        $duree       = $_POST['duree'] ? (int)$_POST['duree'] : null;
+        $tentatives  = (int)($_POST['tentative_max'] ?? 3);
+        if (!$id_lecon || !$titre) {
+            $response = ['success' => false, 'message' => 'Données manquantes'];
+            break;
+        }
+        // Vérification que la leçon appartient à un cours de l'enseignant
+        $stmtV = $pdo->prepare("SELECT c.id_enseignant FROM lecons l JOIN cours c ON l.id_cours = c.id_cours WHERE l.id_lecon = ?");
+        $stmtV->execute([$id_lecon]);
+        $propriete = $stmtV->fetch();
+        if (!estSuperAdmin() && (!$propriete || $propriete['id_enseignant'] != $_SESSION['id_utilisateur'])) {
+            $response = ['success' => false, 'message' => 'Accès refusé'];
+            break;
+        }
+        $ok = ajouterEvaluation($titre, $description, $note, $duree, $id_lecon, $tentatives);
+        $response = $ok
+            ? ['success' => true, 'message' => 'Évaluation créée', 'id' => $pdo->lastInsertId()]
+            : ['success' => false, 'message' => 'Erreur lors de la création'];
+        break;
+
+    case 'modifier_evaluation':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_eval     = (int)($_POST['id_evaluation'] ?? 0);
+        $titre       = trim($_POST['titre'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $note        = (float)($_POST['note_requise'] ?? 60);
+        $duree       = $_POST['duree'] ? (int)$_POST['duree'] : null;
+        $tentatives  = (int)($_POST['tentative_max'] ?? 3);
+        if (!$id_eval || !$titre) {
+            $response = ['success' => false, 'message' => 'Données manquantes'];
+            break;
+        }
+        if (!estSuperAdmin() && !evaluationAppartientEnseignant($id_eval, $_SESSION['id_utilisateur'])) {
+            $response = ['success' => false, 'message' => 'Accès refusé'];
+            break;
+        }
+        $ok = modifierEvaluation($id_eval, $titre, $description, $note, $duree, $tentatives);
+        $response = ['success' => $ok, 'message' => $ok ? 'Évaluation modifiée' : 'Erreur'];
+        break;
+
+    case 'supprimer_evaluation':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_eval = (int)($_POST['id_evaluation'] ?? 0);
+        if (!$id_eval) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+        if (!estSuperAdmin() && !evaluationAppartientEnseignant($id_eval, $_SESSION['id_utilisateur'])) {
+            $response = ['success' => false, 'message' => 'Accès refusé'];
+            break;
+        }
+        $ok = supprimerEvaluation($id_eval);
+        $response = ['success' => $ok, 'message' => $ok ? 'Évaluation supprimée' : 'Erreur'];
+        break;
+
+    case 'ajouter_question':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_eval      = (int)($_POST['id_evaluation'] ?? 0);
+        $texte        = trim($_POST['texte_question'] ?? '');
+        $points       = (int)($_POST['points'] ?? 1);
+        $temps_limite = $_POST['temps_limite'] ? (int)$_POST['temps_limite'] : null;
+        if (!$id_eval || !$texte) {
+            $response = ['success' => false, 'message' => 'Données manquantes'];
+            break;
+        }
+        if (!estSuperAdmin() && !evaluationAppartientEnseignant($id_eval, $_SESSION['id_utilisateur'])) {
+            $response = ['success' => false, 'message' => 'Accès refusé'];
+            break;
+        }
+        $id_new = ajouterQuestion($texte, $points, $temps_limite, $id_eval);
+        $response = $id_new
+            ? ['success' => true, 'message' => 'Question ajoutée', 'id' => $id_new]
+            : ['success' => false, 'message' => 'Erreur lors de l\'ajout'];
+        break;
+
+    case 'modifier_question':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_question  = (int)($_POST['id_question'] ?? 0);
+        $texte        = trim($_POST['texte_question'] ?? '');
+        $points       = (int)($_POST['points'] ?? 1);
+        $temps_limite = $_POST['temps_limite'] ? (int)$_POST['temps_limite'] : null;
+        if (!$id_question || !$texte) {
+            $response = ['success' => false, 'message' => 'Données manquantes'];
+            break;
+        }
+        if (!estSuperAdmin() && !questionAppartientEnseignant($id_question, $_SESSION['id_utilisateur'])) {
+            $response = ['success' => false, 'message' => 'Accès refusé'];
+            break;
+        }
+        $ok = modifierQuestion($id_question, $texte, $points, $temps_limite);
+        $response = ['success' => $ok, 'message' => $ok ? 'Question modifiée' : 'Erreur'];
+        break;
+
+    case 'supprimer_question':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_question = (int)($_POST['id_question'] ?? 0);
+        if (!$id_question) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+        if (!estSuperAdmin() && !questionAppartientEnseignant($id_question, $_SESSION['id_utilisateur'])) {
+            $response = ['success' => false, 'message' => 'Accès refusé'];
+            break;
+        }
+        $ok = supprimerQuestion($id_question);
+        $response = ['success' => $ok, 'message' => $ok ? 'Question supprimée' : 'Erreur'];
+        break;
+
+    case 'ajouter_option':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_question  = (int)($_POST['id_question'] ?? 0);
+        $texte        = trim($_POST['texte_option'] ?? '');
+        $est_correcte = !empty($_POST['est_correcte']) && $_POST['est_correcte'] !== '0';
+        if (!$id_question || !$texte) {
+            $response = ['success' => false, 'message' => 'Données manquantes'];
+            break;
+        }
+        if (!estSuperAdmin() && !questionAppartientEnseignant($id_question, $_SESSION['id_utilisateur'])) {
+            $response = ['success' => false, 'message' => 'Accès refusé'];
+            break;
+        }
+        $id_new = ajouterOption($texte, $est_correcte, $id_question);
+        $response = $id_new
+            ? ['success' => true, 'message' => 'Option ajoutée', 'id' => $id_new]
+            : ['success' => false, 'message' => 'Erreur lors de l\'ajout'];
+        break;
+
+    case 'modifier_option':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_option    = (int)($_POST['id_option'] ?? 0);
+        $texte        = trim($_POST['texte_option'] ?? '');
+        $est_correcte = !empty($_POST['est_correcte']) && $_POST['est_correcte'] !== '0';
+        if (!$id_option || !$texte) {
+            $response = ['success' => false, 'message' => 'Données manquantes'];
+            break;
+        }
+        $ok = modifierOption($id_option, $texte, $est_correcte);
+        $response = ['success' => $ok, 'message' => $ok ? 'Option modifiée' : 'Erreur'];
+        break;
+
+    case 'supprimer_option':
+        if (!estEnseignant() && !estSuperAdmin()) {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+            break;
+        }
+        $id_option = (int)($_POST['id_option'] ?? 0);
+        if (!$id_option) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+        $ok = supprimerOption($id_option);
+        $response = ['success' => $ok, 'message' => $ok ? 'Option supprimée' : 'Erreur'];
+        break;
+
+    case 'obtenir_evaluation_complete':
+        if (!estConnecte()) { $response = ['success' => false, 'message' => 'Non connecté']; break; }
+        $id_lecon = (int)($_GET['id_lecon'] ?? 0);
+        if (!$id_lecon) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+        $eval = obtenirEvaluationComplete($id_lecon);
+        $response = ['success' => true, 'data' => $eval];
+        break;
+
+    // ============================================
     // ACTION PAR DÉFAUT
     // ============================================
-    
+
     default:
         $response = ['success' => false, 'message' => 'Action non reconnue'];
         break;

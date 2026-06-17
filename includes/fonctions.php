@@ -485,6 +485,187 @@ function enregistrerResultat($id_utilisateur, $id_evaluation, $reponses, $temps_
 }
 
 // ============================================
+// FONCTIONS GESTION QUIZ (CRUD enseignant)
+// ============================================
+
+/**
+ * Crée une évaluation pour une leçon.
+ * Une leçon ne peut avoir qu'une évaluation active.
+ */
+function ajouterEvaluation($titre, $description, $note_requise, $duree, $id_lecon, $tentative_max = 3) {
+    global $pdo;
+    // Désactiver l'ancienne évaluation si elle existe
+    $stmt = $pdo->prepare("UPDATE evaluations SET actif = 0 WHERE id_lecon = ?");
+    $stmt->execute([$id_lecon]);
+    // Insérer la nouvelle
+    $stmt = $pdo->prepare("
+        INSERT INTO evaluations (titre_evaluation, description, note_requise, duree, id_lecon, tentative_max, actif)
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+    ");
+    return $stmt->execute([$titre, $description ?: null, $note_requise, $duree ?: null, $id_lecon, $tentative_max]);
+}
+
+/**
+ * Modifie une évaluation existante.
+ */
+function modifierEvaluation($id_evaluation, $titre, $description, $note_requise, $duree, $tentative_max) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        UPDATE evaluations
+        SET titre_evaluation = ?, description = ?, note_requise = ?, duree = ?, tentative_max = ?
+        WHERE id_evaluation = ?
+    ");
+    return $stmt->execute([$titre, $description ?: null, $note_requise, $duree ?: null, $tentative_max, $id_evaluation]);
+}
+
+/**
+ * Supprime une évaluation et ses questions/options en cascade.
+ */
+function supprimerEvaluation($id_evaluation) {
+    global $pdo;
+    $stmt = $pdo->prepare("DELETE FROM evaluations WHERE id_evaluation = ?");
+    return $stmt->execute([$id_evaluation]);
+}
+
+/**
+ * Récupère l'évaluation active d'une leçon avec ses questions et options.
+ */
+function obtenirEvaluationComplete($id_lecon) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM evaluations WHERE id_lecon = ? AND actif = 1 LIMIT 1");
+    $stmt->execute([$id_lecon]);
+    $evaluation = $stmt->fetch();
+    if (!$evaluation) return null;
+    // Charger les questions avec leurs options
+    $stmtQ = $pdo->prepare("SELECT * FROM questions WHERE id_evaluation = ? ORDER BY ordre_affichage");
+    $stmtQ->execute([$evaluation['id_evaluation']]);
+    $questions = $stmtQ->fetchAll();
+    foreach ($questions as &$q) {
+        $stmtO = $pdo->prepare("SELECT * FROM options WHERE id_question = ?");
+        $stmtO->execute([$q['id_question']]);
+        $q['options'] = $stmtO->fetchAll();
+    }
+    $evaluation['questions'] = $questions;
+    return $evaluation;
+}
+
+/**
+ * Ajoute une question à une évaluation.
+ */
+function ajouterQuestion($texte, $points, $temps_limite, $id_evaluation) {
+    global $pdo;
+    // Calculer le prochain ordre
+    $stmt = $pdo->prepare("SELECT MAX(ordre_affichage) as max_ordre FROM questions WHERE id_evaluation = ?");
+    $stmt->execute([$id_evaluation]);
+    $ordre = ($stmt->fetch()['max_ordre'] ?? 0) + 1;
+    $stmt = $pdo->prepare("
+        INSERT INTO questions (texte_question, points, temps_limite, id_evaluation, ordre_affichage)
+        VALUES (?, ?, ?, ?, ?)
+    ");
+    if ($stmt->execute([$texte, $points ?: 1, $temps_limite ?: null, $id_evaluation, $ordre])) {
+        return $pdo->lastInsertId();
+    }
+    return false;
+}
+
+/**
+ * Modifie une question existante.
+ */
+function modifierQuestion($id_question, $texte, $points, $temps_limite) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        UPDATE questions SET texte_question = ?, points = ?, temps_limite = ? WHERE id_question = ?
+    ");
+    return $stmt->execute([$texte, $points ?: 1, $temps_limite ?: null, $id_question]);
+}
+
+/**
+ * Supprime une question et ses options en cascade.
+ */
+function supprimerQuestion($id_question) {
+    global $pdo;
+    $stmt = $pdo->prepare("DELETE FROM questions WHERE id_question = ?");
+    return $stmt->execute([$id_question]);
+}
+
+/**
+ * Ajoute une option à une question.
+ */
+function ajouterOption($texte, $est_correcte, $id_question) {
+    global $pdo;
+    // Si cette option est correcte, désactiver les autres réponses correctes
+    if ($est_correcte) {
+        $stmt = $pdo->prepare("UPDATE options SET est_correcte = 0 WHERE id_question = ?");
+        $stmt->execute([$id_question]);
+    }
+    $stmt = $pdo->prepare("INSERT INTO options (texte_option, est_correcte, id_question) VALUES (?, ?, ?)");
+    if ($stmt->execute([$texte, $est_correcte ? 1 : 0, $id_question])) {
+        return $pdo->lastInsertId();
+    }
+    return false;
+}
+
+/**
+ * Modifie une option existante.
+ */
+function modifierOption($id_option, $texte, $est_correcte) {
+    global $pdo;
+    if ($est_correcte) {
+        // Récupérer la question parente pour réinitialiser les autres
+        $stmt = $pdo->prepare("SELECT id_question FROM options WHERE id_option = ?");
+        $stmt->execute([$id_option]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $stmt2 = $pdo->prepare("UPDATE options SET est_correcte = 0 WHERE id_question = ?");
+            $stmt2->execute([$row['id_question']]);
+        }
+    }
+    $stmt = $pdo->prepare("UPDATE options SET texte_option = ?, est_correcte = ? WHERE id_option = ?");
+    return $stmt->execute([$texte, $est_correcte ? 1 : 0, $id_option]);
+}
+
+/**
+ * Supprime une option.
+ */
+function supprimerOption($id_option) {
+    global $pdo;
+    $stmt = $pdo->prepare("DELETE FROM options WHERE id_option = ?");
+    return $stmt->execute([$id_option]);
+}
+
+/**
+ * Vérifie que l'évaluation appartient à un cours de l'enseignant connecté.
+ * Sécurité anti-IDOR.
+ */
+function evaluationAppartientEnseignant($id_evaluation, $id_enseignant) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT e.id_evaluation FROM evaluations e
+        JOIN lecons l ON e.id_lecon = l.id_lecon
+        JOIN cours c ON l.id_cours = c.id_cours
+        WHERE e.id_evaluation = ? AND c.id_enseignant = ?
+    ");
+    $stmt->execute([$id_evaluation, $id_enseignant]);
+    return $stmt->fetch() !== false;
+}
+
+/**
+ * Vérifie que la question appartient à un cours de l'enseignant connecté.
+ */
+function questionAppartientEnseignant($id_question, $id_enseignant) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT q.id_question FROM questions q
+        JOIN evaluations e ON q.id_evaluation = e.id_evaluation
+        JOIN lecons l ON e.id_lecon = l.id_lecon
+        JOIN cours c ON l.id_cours = c.id_cours
+        WHERE q.id_question = ? AND c.id_enseignant = ?
+    ");
+    $stmt->execute([$id_question, $id_enseignant]);
+    return $stmt->fetch() !== false;
+}
+
+// ============================================
 // FONCTIONS STATISTIQUES
 // ============================================
 
