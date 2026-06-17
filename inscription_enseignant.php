@@ -66,11 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute($params);
             }
             
-            // Ajouter à la table enseignants
-            $stmt = $pdo->prepare("INSERT INTO enseignants (id_utilisateur, specialite, biographie, statut) VALUES (?, ?, ?, 'en_attente')");
-            $stmt->execute([$resultat['id'], $specialite, $biographie]);
-            
-            $success = 'Inscription réussie ! Votre compte enseignant sera validé sous 48h. Redirection...';
+            // Le compte enseignant est directement actif — rôle stocké dans utilisateurs.role
+            $success = 'Inscription réussie ! Votre compte enseignant est actif. Redirection...';
             header('refresh:3;url=connexion.php');
         } else {
             $error = $resultat['message'];
@@ -335,7 +332,7 @@ $page_title = 'Inscription Enseignant - GOL';
                     <line x1="12" y1="8" x2="12" y2="12"/>
                     <line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
-                <p>Les comptes enseignants sont soumis à validation par notre équipe. Vous serez notifié par email une fois votre compte activé.</p>
+                <p>Créez votre compte enseignant pour commencer à publier des cours sur GOL.</p>
             </div>
 
             <form method="POST" action="" id="inscriptionForm">
