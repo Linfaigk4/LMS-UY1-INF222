@@ -23,7 +23,15 @@ if (!$evaluation) {
     exit;
 }
 
-$questions = obtenirQuestions($id_evaluation);
+// Charger les questions avec leurs options et le timer par question
+$questions_brutes = obtenirQuestions($id_evaluation);
+$questions = [];
+foreach ($questions_brutes as $q) {
+    $stmt_opt = $pdo->prepare("SELECT id_option, texte_option, est_correcte FROM options WHERE id_question = ?");
+    $stmt_opt->execute([$q['id_question']]);
+    $q['options_liste'] = $stmt_opt->fetchAll();
+    $questions[] = $q;
+}
 $lecon = obtenirLecon($evaluation['id_lecon']);
 
 // Vérifier si la leçon a été terminée
@@ -476,15 +484,19 @@ let userAnswers = {};
 let timerInterval = null;
 let timeRemaining = <?= $evaluation['duree'] ? $evaluation['duree'] * 60 : 0 ?>;
 
-// Initialisation
+// Initialiser
 function init() {
     renderQuestions();
     renderProgressDots();
     updateNavigation();
     
-    // Timer
+    // Timer global
     if (timeRemaining > 0) {
         startTimer();
+    }
+    // Timer première question
+    if (questions.length > 0) {
+        demarrerTimerQuestion(questions[0]);
     }
 }
 
@@ -498,18 +510,21 @@ function renderQuestions() {
         questionDiv.id = `question-${index}`;
         questionDiv.style.display = index === currentQuestion ? 'block' : 'none';
         
-        const optionsHtml = q.options ? JSON.parse(q.options).map(opt => `
+        const optionsHtml = (q.options_liste && q.options_liste.length) ? q.options_liste.map(opt => `
             <div class="option-item" data-option-id="${opt.id_option}" onclick="selectOption(${q.id_question}, ${opt.id_option})">
                 <div class="option-radio" id="radio-${q.id_question}-${opt.id_option}"></div>
                 <div class="option-text">${escapeHtml(opt.texte_option)}</div>
             </div>
-        `).join('') : '<p>Type de question non supporté</p>';
+        `).join('') : '<p style="color:var(--texte-tertiaire);font-size:0.875rem">Aucune option définie pour cette question.</p>';
         
         questionDiv.innerHTML = `
             <div class="question-header">
                 <div class="question-number">Question ${index + 1} / ${questions.length}</div>
                 <div class="question-text">${escapeHtml(q.texte_question)}</div>
-                ${q.points ? `<div style="font-size: 0.7rem; margin-top: var(--spacing-2); color: var(--texte-tertiaire);">${q.points} point(s)</div>` : ''}
+                <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+                    ${q.points ? `<span style="font-size:0.7rem;color:var(--texte-tertiaire);">${q.points} point(s)</span>` : ''}
+                    ${q.temps_limite ? `<span id="timer-q-${q.id_question}" style="font-size:0.7rem;font-weight:600;color:var(--avertissement);padding:2px 8px;background:rgba(245,158,11,0.1);border-radius:999px;">&#9201; ${q.temps_limite}s</span>` : ''}
+                </div>
             </div>
             <div class="question-body">
                 <div class="options-list">
@@ -567,6 +582,9 @@ function selectOption(questionId, optionId) {
     renderProgressDots();
 }
 
+// Timer par question
+let timerQuestion = null;
+
 function goToQuestion(index) {
     if (index >= 0 && index < questions.length) {
         document.getElementById(`question-${currentQuestion}`).style.display = 'none';
@@ -574,7 +592,31 @@ function goToQuestion(index) {
         document.getElementById(`question-${currentQuestion}`).style.display = 'block';
         updateNavigation();
         renderProgressDots();
+        // Démarrer le timer par question si défini
+        demarrerTimerQuestion(questions[index]);
     }
+}
+
+function demarrerTimerQuestion(q) {
+    // Annuler le timer précédent
+    if (timerQuestion) clearInterval(timerQuestion);
+    if (!q.temps_limite) return;
+    let restant = parseInt(q.temps_limite);
+    const el = document.getElementById('timer-q-' + q.id_question);
+    if (!el) return;
+    timerQuestion = setInterval(() => {
+        restant--;
+        if (el) el.textContent = '⏱ ' + restant + 's';
+        if (restant <= 0) {
+            clearInterval(timerQuestion);
+            // Question expirée : aucune réponse enregistrée = incorrecte
+            if (!userAnswers[q.id_question]) userAnswers[q.id_question] = null;
+            // Avancer à la question suivante si possible
+            if (currentQuestion < questions.length - 1) {
+                goToQuestion(currentQuestion + 1);
+            }
+        }
+    }, 1000);
 }
 
 function updateNavigation() {
