@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($page_title) ? $page_title : 'GOL - Gugle Online Learning' ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= defined('SITE_URL') ? SITE_URL : '/' ?>assets/css/style.css">
     <style>
         * {
             margin: 0;
@@ -23,10 +24,13 @@
             --primaire: #2563eb;
             --primaire-clair: #3b82f6;
             --primaire-sombre: #1d4ed8;
+            --primaire-gradient: linear-gradient(135deg, #2563eb, #06b6d4);
+            --secondaire: #0f172a;
             --accent: #06b6d4;
             --succes: #22c55e;
             --danger: #ef4444;
             --avertissement: #f59e0b;
+            --info: #8b5cf6;
             --fond: #f8fafc;
             --fond-secondaire: #f1f5f9;
             --carte: #ffffff;
@@ -36,33 +40,48 @@
             --texte-secondaire: #475569;
             --texte-tertiaire: #64748b;
             --bordure: #e2e8f0;
-            --ombre-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --ombre-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-            --ombre-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
-            --radius-lg: 0.75rem;
-            --radius-xl: 1rem;
-            --radius-2xl: 1.5rem;
+            --ombre-sm:   0 1px 3px rgba(0,0,0,0.08);
+            --ombre-md:   0 4px 6px -1px rgba(0,0,0,0.1);
+            --ombre-lg:   0 10px 15px -3px rgba(0,0,0,0.1);
+            --ombre-xl:   0 20px 25px -5px rgba(0,0,0,0.12);
+            --ombre-glow: 0 0 20px rgba(37,99,235,0.35);
+            --glass-bg:     rgba(255,255,255,0.06);
+            --glass-border: rgba(255,255,255,0.12);
+            --radius-sm:   0.25rem;
+            --radius-md:   0.5rem;
+            --radius-lg:   0.75rem;
+            --radius-xl:   1rem;
+            --radius-2xl:  1.5rem;
             --radius-full: 9999px;
-            --spacing-1: 0.25rem;
-            --spacing-2: 0.5rem;
-            --spacing-3: 0.75rem;
-            --spacing-4: 1rem;
-            --spacing-5: 1.25rem;
-            --spacing-6: 1.5rem;
-            --spacing-8: 2rem;
+            --spacing-1:  0.25rem;
+            --spacing-2:  0.5rem;
+            --spacing-3:  0.75rem;
+            --spacing-4:  1rem;
+            --spacing-5:  1.25rem;
+            --spacing-6:  1.5rem;
+            --spacing-8:  2rem;
+            --spacing-10: 2.5rem;
+            --spacing-12: 3rem;
             --transition-base: 0.3s ease;
         }
-        
+
         [data-theme="dark"] {
-            --fond: #0a0a0f;
+            --fond:           #0a0a0f;
             --fond-secondaire: #111827;
-            --carte: #1e1e2e;
-            --carte-hover: #2a2a3e;
-            --carte-border: #2d3348;
-            --texte: #ffffff;
-            --texte-secondaire: #e2e8f0;
-            --texte-tertiaire: #cbd5e1;
-            --bordure: #334155;
+            --carte:          #1e1e2e;
+            --carte-hover:    #2a2a3e;
+            --carte-border:   #2d3348;
+            --texte:          #f1f5f9;
+            --texte-secondaire: #cbd5e1;
+            --texte-tertiaire:  #94a3b8;
+            --bordure:        #334155;
+            --ombre-sm:   0 1px 3px rgba(0,0,0,0.4);
+            --ombre-md:   0 4px 6px -1px rgba(0,0,0,0.5);
+            --ombre-lg:   0 10px 15px -3px rgba(0,0,0,0.5);
+            --ombre-xl:   0 20px 25px -5px rgba(0,0,0,0.6);
+            --ombre-glow: 0 0 24px rgba(37,99,235,0.5);
+            --glass-bg:     rgba(255,255,255,0.04);
+            --glass-border: rgba(255,255,255,0.08);
         }
         
         /* Navbar */
