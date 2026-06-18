@@ -533,6 +533,11 @@ function synchroniserProgressionModule($id_utilisateur, $id_module) {
     ");
     $stmtUpd->execute([$progression_globale, $statut, $progression_globale, $id_utilisateur, $id_module]);
 
+    // Générer le certificat automatiquement si 100%
+    if ($progression_globale >= 100) {
+        verifierEtGenererCertificat($id_utilisateur, $id_module);
+    }
+
     return $progression_globale;
 }
 
@@ -942,26 +947,31 @@ function inscrireEtudiantModule($id_utilisateur, $id_module) {
 // FONCTIONS CERTIFICATS
 // ============================================
 
-function genererCertificat($id_utilisateur, $id_module) {
+function genererCertificat($id_utilisateur, $id_module, $note_obtenue = null, $exceptionnel = false) {
     global $pdo;
-    
+
+    // Si déjà existant, retourner l'existant
     $stmt = $pdo->prepare("SELECT * FROM certificats WHERE id_utilisateur = ? AND id_module = ?");
     $stmt->execute([$id_utilisateur, $id_module]);
     $existant = $stmt->fetch();
-    
     if ($existant) {
         return $existant;
     }
-    
+
+    // Calculer la note finale du module si non fournie
+    if ($note_obtenue === null && !$exceptionnel) {
+        $note_obtenue = calculerNoteFinalModule($id_utilisateur, $id_module);
+    }
+
     $code_unique = 'GOL-' . strtoupper(uniqid()) . '-' . date('Ymd');
-    
+
     $stmt = $pdo->prepare("
-        INSERT INTO certificats (code_unique, id_utilisateur, id_module, note_obtenue, statut)
-        VALUES (?, ?, ?, 100, 'valide')
+        INSERT INTO certificats (code_unique, id_utilisateur, id_module, note_obtenue, statut, validation_exceptionnelle)
+        VALUES (?, ?, ?, ?, 'valide', ?)
     ");
-    
-    $stmt->execute([$code_unique, $id_utilisateur, $id_module]);
-    
+    $stmt->execute([$code_unique, $id_utilisateur, $id_module, $note_obtenue, $exceptionnel ? 1 : 0]);
+
+    $id_new = $pdo->lastInsertId();
     $stmt = $pdo->prepare("
         SELECT c.*, u.nom, u.prenom, u.email, m.nom_module
         FROM certificats c
@@ -969,9 +979,47 @@ function genererCertificat($id_utilisateur, $id_module) {
         JOIN modules m ON c.id_module = m.id_module
         WHERE c.id_certificat = ?
     ");
-    $stmt->execute([$pdo->lastInsertId()]);
-    
+    $stmt->execute([$id_new]);
     return $stmt->fetch();
+}
+
+/**
+ * Calcule la note finale d'un étudiant sur l'ensemble du module.
+ * Formule : (somme points gagnés / somme points totaux) * 100
+ * N'utilise que le meilleur score par évaluation.
+ */
+function calculerNoteFinalModule($id_utilisateur, $id_module) {
+    global $pdo;
+    // Récupérer toutes les évaluations du module
+    $stmt = $pdo->prepare("
+        SELECT e.id_evaluation, e.note_requise,
+               MAX(r.score) as meilleur_score
+        FROM evaluations e
+        JOIN lecons l ON e.id_lecon = l.id_lecon
+        JOIN cours c ON l.id_cours = c.id_cours
+        LEFT JOIN resultats_evaluations r ON r.id_evaluation = e.id_evaluation AND r.id_utilisateur = ?
+        WHERE c.id_module = ? AND c.statut = 'publie' AND e.actif = 1
+        GROUP BY e.id_evaluation
+    ");
+    $stmt->execute([$id_utilisateur, $id_module]);
+    $evaluations = $stmt->fetchAll();
+
+    $score_total = 0;
+    $points_max_total = 0;
+
+    foreach ($evaluations as $ev) {
+        // Points max de cette évaluation
+        $stmtPts = $pdo->prepare("SELECT COALESCE(SUM(points),0) as total FROM questions WHERE id_evaluation = ?");
+        $stmtPts->execute([$ev['id_evaluation']]);
+        $pts_max = (float)$stmtPts->fetch()['total'];
+        $points_max_total += $pts_max;
+        // Score obtenu = meilleur score en % × pts_max
+        $score_pct = (float)($ev['meilleur_score'] ?? 0);
+        $score_total += ($score_pct / 100) * $pts_max;
+    }
+
+    if ($points_max_total === 0) return 0;
+    return round(($score_total / $points_max_total) * 100, 2);
 }
 
 // ============================================
@@ -1230,4 +1278,163 @@ function rechercherGlobal($terme) {
     $resultats['cours'] = $stmtC->fetchAll();
 
     return $resultats;
+}
+
+// ============================================
+// FONCTIONS CERTIFICATS EXCEPTIONNELS
+// ============================================
+
+/**
+ * Vérifie si toutes les leçons d'un module sont à statut 100 pour un étudiant.
+ */
+function moduleValideParEtudiant($id_utilisateur, $id_module) {
+    global $pdo;
+    // Compter les leçons du module
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) as total FROM lecons l
+        JOIN cours c ON l.id_cours = c.id_cours
+        WHERE c.id_module = ? AND c.statut = 'publie'
+    ");
+    $stmt->execute([$id_module]);
+    $total = (int)$stmt->fetch()['total'];
+    if ($total === 0) return false;
+
+    // Compter les leçons à 100
+    $stmt2 = $pdo->prepare("
+        SELECT COUNT(*) as valides FROM progression_lecons pl
+        JOIN lecons l ON pl.id_lecon = l.id_lecon
+        JOIN cours c ON l.id_cours = c.id_cours
+        WHERE c.id_module = ? AND c.statut = 'publie'
+          AND pl.id_utilisateur = ? AND pl.statut = 100
+    ");
+    $stmt2->execute([$id_module, $id_utilisateur]);
+    $valides = (int)$stmt2->fetch()['valides'];
+    return $valides >= $total;
+}
+
+/**
+ * Génère automatiquement le certificat si le module est complété à 100% ET note suffisante.
+ */
+function verifierEtGenererCertificat($id_utilisateur, $id_module) {
+    global $pdo;
+    // Vérifier progression_globale = 100
+    $stmt = $pdo->prepare("SELECT progression_globale FROM inscriptions_modules WHERE id_utilisateur = ? AND id_module = ?");
+    $stmt->execute([$id_utilisateur, $id_module]);
+    $row = $stmt->fetch();
+    if (!$row || (float)$row['progression_globale'] < 100) return false;
+
+    // Calculer la note finale du module
+    $note = calculerNoteFinalModule($id_utilisateur, $id_module);
+
+    // Vérifier si la note est suffisante (note_requise moyenne des évaluations du module)
+    $stmtNR = $pdo->prepare("
+        SELECT AVG(e.note_requise) as note_requise_moy
+        FROM evaluations e
+        JOIN lecons l ON e.id_lecon = l.id_lecon
+        JOIN cours c ON l.id_cours = c.id_cours
+        WHERE c.id_module = ? AND c.statut = 'publie' AND e.actif = 1
+    ");
+    $stmtNR->execute([$id_module]);
+    $rowNR = $stmtNR->fetch();
+    $note_requise = (float)($rowNR['note_requise_moy'] ?? 60);
+
+    if ($note < $note_requise) return false; // CAS 2 : note insuffisante
+
+    $cert = genererCertificat($id_utilisateur, $id_module, $note, false);
+    if ($cert) {
+        ajouterNotification($id_utilisateur, 'Certificat obtenu !',
+            'Félicitations ! Votre certificat de module a été généré automatiquement.', 'succes');
+    }
+    return (bool)$cert;
+}
+
+/**
+ * Crée une demande de certificat exceptionnel.
+ */
+function creerDemandeCertificat($id_etudiant, $id_module, $motif) {
+    global $pdo;
+    // Vérifier qu'une demande en attente n'existe pas déjà
+    $stmt = $pdo->prepare("
+        SELECT id_demande FROM demandes_certificats
+        WHERE id_etudiant = ? AND id_module = ? AND statut = 'en_attente'
+    ");
+    $stmt->execute([$id_etudiant, $id_module]);
+    if ($stmt->fetch()) {
+        return ['success' => false, 'message' => 'Une demande est déjà en attente'];
+    }
+    $stmt2 = $pdo->prepare("
+        INSERT INTO demandes_certificats (id_etudiant, id_module, motif)
+        VALUES (?, ?, ?)
+    ");
+    if ($stmt2->execute([$id_etudiant, $id_module, $motif])) {
+        return ['success' => true, 'id' => $pdo->lastInsertId()];
+    }
+    return ['success' => false, 'message' => 'Erreur lors de la création'];
+}
+
+/**
+ * Approuve une demande — Super Admin uniquement.
+ * Génère le certificat même sans progression = 100%.
+ */
+function approuverDemandeCertificat($id_demande, $id_admin) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM demandes_certificats WHERE id_demande = ?");
+    $stmt->execute([$id_demande]);
+    $demande = $stmt->fetch();
+    if (!$demande) return ['success' => false, 'message' => 'Demande introuvable'];
+
+    // Générer le certificat exceptionnel
+    genererCertificat($demande['id_etudiant'], $demande['id_module'], null, true);
+
+    // Mettre à jour le statut
+    $stmt2 = $pdo->prepare("
+        UPDATE demandes_certificats
+        SET statut='approuve', date_traitement=NOW(), id_admin_traitant=?
+        WHERE id_demande=?
+    ");
+    $stmt2->execute([$id_admin, $id_demande]);
+
+    ajouterNotification($demande['id_etudiant'], 'Certificat exceptionnel accordé',
+        'Votre demande de certificat exceptionnel a été approuvée.', 'succes');
+
+    return ['success' => true];
+}
+
+/**
+ * Refuse une demande — Super Admin uniquement.
+ */
+function refuserDemandeCertificat($id_demande, $id_admin, $commentaire) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT id_etudiant FROM demandes_certificats WHERE id_demande = ?");
+    $stmt->execute([$id_demande]);
+    $demande = $stmt->fetch();
+    if (!$demande) return ['success' => false, 'message' => 'Demande introuvable'];
+
+    $stmt2 = $pdo->prepare("
+        UPDATE demandes_certificats
+        SET statut='refuse', date_traitement=NOW(), id_admin_traitant=?, commentaire_admin=?
+        WHERE id_demande=?
+    ");
+    $stmt2->execute([$id_admin, $commentaire, $id_demande]);
+
+    ajouterNotification($demande['id_etudiant'], 'Demande de certificat refusée',
+        'Votre demande de certificat exceptionnel a été refusée.', 'avertissement');
+
+    return ['success' => true];
+}
+
+/**
+ * Retourne les demandes de certificats en attente (Super Admin).
+ */
+function obtenirDemandesCertificatsEnAttente() {
+    global $pdo;
+    $stmt = $pdo->query("
+        SELECT dc.*, u.nom, u.prenom, u.email, m.nom_module
+        FROM demandes_certificats dc
+        JOIN utilisateurs u ON dc.id_etudiant = u.id_utilisateur
+        JOIN modules m ON dc.id_module = m.id_module
+        WHERE dc.statut = 'en_attente'
+        ORDER BY dc.date_demande DESC
+    ");
+    return $stmt->fetchAll();
 }

@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // Récupération des données
 $modules = obtenirModules(false);
+$demandes_certificats = estSuperAdmin() ? obtenirDemandesCertificatsEnAttente() : [];
 $utilisateurs = obtenirTousUtilisateurs();
 $demandes = obtenirDemandesEnAttente();
 
@@ -526,6 +527,12 @@ $page_title = 'Administration - GOL';
                 <?php endif; ?>
             </a>
             <?php if (estSuperAdmin()): ?>
+                <a href="?section=certificats" class="admin-nav-item <?= $section === 'certificats' ? 'active' : '' ?>">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Certificats
+                </a>
                 <a href="?section=statistiques" class="admin-nav-item <?= $section === 'statistiques' ? 'active' : '' ?>">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 20V10M12 20V4M6 20v-6"/>
@@ -805,6 +812,52 @@ $page_title = 'Administration - GOL';
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
+        <?php elseif ($section === 'certificats' && estSuperAdmin()): ?>
+            <div class="admin-header">
+                <h1 class="admin-title">Demandes de certificats exceptionnels</h1>
+            </div>
+            <?php if (empty($demandes_certificats)): ?>
+                <div class="alert alert-success">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    Aucune demande de certificat en attente.
+                </div>
+            <?php else: ?>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Étudiant</th>
+                            <th>Module</th>
+                            <th>Date</th>
+                            <th>Motif</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($demandes_certificats as $dc): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($dc['prenom'] . ' ' . $dc['nom']) ?><br><small><?= htmlspecialchars($dc['email']) ?></small></td>
+                            <td><?= htmlspecialchars($dc['nom_module']) ?></td>
+                            <td><?= date('d/m/Y', strtotime($dc['date_demande'])) ?></td>
+                            <td style="max-width:200px;font-size:0.8rem"><?= htmlspecialchars(substr($dc['motif'], 0, 100)) ?>...</td>
+                            <td><span class="status-badge active">En attente</span></td>
+                            <td class="action-buttons">
+                                <button class="btn-admin" onclick="approuverDemandeCertificat(<?= $dc['id_demande'] ?>)">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                                    Approuver
+                                </button>
+                                <button class="btn-admin btn-admin-outline" onclick="refuserDemandeCertificat(<?= $dc['id_demande'] ?>)">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    Refuser
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         <?php endif; ?>
     </main>
 </div>
@@ -966,6 +1019,33 @@ function refuserDemande(id) {
                 }
             });
     }
+}
+
+function approuverDemandeCertificat(id) {
+    if (!confirm('Approuver cette demande et générer un certificat exceptionnel ?')) return;
+    envoyerRequeteAjax('approuver_demande_certificat', 'POST', { id_demande: id })
+        .then(result => {
+            if (result.success) {
+                afficherNotification('Certificat exceptionnel accordé', 'succes');
+                location.reload();
+            } else {
+                afficherNotification(result.message || 'Erreur', 'danger');
+            }
+        });
+}
+
+function refuserDemandeCertificat(id) {
+    const commentaire = prompt('Motif du refus (obligatoire) :');
+    if (!commentaire) return;
+    envoyerRequeteAjax('refuser_demande_certificat', 'POST', { id_demande: id, commentaire: commentaire })
+        .then(result => {
+            if (result.success) {
+                afficherNotification('Demande refusée', 'info');
+                location.reload();
+            } else {
+                afficherNotification(result.message || 'Erreur', 'danger');
+            }
+        });
 }
 
 // Fermer modal en cliquant en dehors

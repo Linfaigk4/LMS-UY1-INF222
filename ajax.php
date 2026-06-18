@@ -294,21 +294,79 @@ switch ($action) {
     // ============================================
     // CERTIFICATS
     // ============================================
-    
+
     case 'generer_certificat':
         if (estEtudiant()) {
-            $id_module = $_POST['id_module'] ?? 0;
+            $id_module = (int)($_POST['id_module'] ?? 0);
             if ($id_module) {
-                $certificat = genererCertificat($_SESSION['id_utilisateur'], $id_module);
-                $response = ['success' => !empty($certificat), 'data' => $certificat];
-                if (empty($certificat)) {
-                    $response['message'] = 'Module non complété à 100%';
+                // Vérifier progression + note avant de générer
+                $ok = verifierEtGenererCertificat($_SESSION['id_utilisateur'], $id_module);
+                if ($ok) {
+                    $stmtC = $pdo->prepare("SELECT c.*, u.nom, u.prenom, m.nom_module FROM certificats c JOIN utilisateurs u ON c.id_utilisateur=u.id_utilisateur JOIN modules m ON c.id_module=m.id_module WHERE c.id_utilisateur=? AND c.id_module=?");
+                    $stmtC->execute([$_SESSION['id_utilisateur'], $id_module]);
+                    $cert = $stmtC->fetch();
+                    $response = ['success' => true, 'data' => $cert];
+                } else {
+                    $response = ['success' => false, 'message' => 'Conditions non remplies (progression ou note insuffisante)'];
                 }
             } else {
                 $response = ['success' => false, 'message' => 'ID module manquant'];
             }
         } else {
             $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+
+    case 'obtenir_certificat':
+        $id_certificat = (int)($_GET['id'] ?? 0);
+        if ($id_certificat) {
+            // Étudiant ne voit que le sien ; admin voit tous
+            if (estSuperAdmin() || estPromoteur()) {
+                $stmtC = $pdo->prepare("SELECT c.*, u.nom, u.prenom, u.email, m.nom_module FROM certificats c JOIN utilisateurs u ON c.id_utilisateur=u.id_utilisateur JOIN modules m ON c.id_module=m.id_module WHERE c.id_certificat=?");
+                $stmtC->execute([$id_certificat]);
+            } else {
+                $stmtC = $pdo->prepare("SELECT c.*, u.nom, u.prenom, u.email, m.nom_module FROM certificats c JOIN utilisateurs u ON c.id_utilisateur=u.id_utilisateur JOIN modules m ON c.id_module=m.id_module WHERE c.id_certificat=? AND c.id_utilisateur=?");
+                $stmtC->execute([$id_certificat, $_SESSION['id_utilisateur']]);
+            }
+            $cert = $stmtC->fetch();
+            $response = $cert ? ['success' => true, 'data' => $cert] : ['success' => false, 'message' => 'Certificat non trouvé'];
+        } else {
+            $response = ['success' => false, 'message' => 'ID manquant'];
+        }
+        break;
+
+    case 'demander_certificat':
+        if (estEtudiant()) {
+            $id_module = (int)($_POST['id_module'] ?? 0);
+            $motif     = trim($_POST['motif'] ?? '');
+            if (!$id_module || !$motif) {
+                $response = ['success' => false, 'message' => 'Données manquantes'];
+                break;
+            }
+            $response = creerDemandeCertificat($_SESSION['id_utilisateur'], $id_module, $motif);
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+
+    case 'approuver_demande_certificat':
+        if (estSuperAdmin()) {
+            $id_demande = (int)($_POST['id_demande'] ?? 0);
+            if (!$id_demande) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+            $response = approuverDemandeCertificat($id_demande, $_SESSION['id_utilisateur']);
+        } else {
+            $response = ['success' => false, 'message' => 'Réservé au Super Admin'];
+        }
+        break;
+
+    case 'refuser_demande_certificat':
+        if (estSuperAdmin()) {
+            $id_demande  = (int)($_POST['id_demande'] ?? 0);
+            $commentaire = trim($_POST['commentaire'] ?? '');
+            if (!$id_demande) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+            $response = refuserDemandeCertificat($id_demande, $_SESSION['id_utilisateur'], $commentaire);
+        } else {
+            $response = ['success' => false, 'message' => 'Réservé au Super Admin'];
         }
         break;
     
@@ -331,69 +389,23 @@ switch ($action) {
             $response = ['success' => false, 'message' => 'Aucun fichier reçu'];
         }
         break;
-        
-        case 'obtenir_certificat':
-            $id_certificat = $_GET['id'] ?? 0;
-            if ($id_certificat) {
-                $stmt = $pdo->prepare("
-                    SELECT c.*, u.nom, u.prenom, u.email, m.nom_module
-                    FROM certificats c
-                    JOIN utilisateurs u ON c.id_utilisateur = u.id_utilisateur
-                    JOIN modules m ON c.id_module = m.id_module
-                    WHERE c.id_certificat = ? AND (c.id_utilisateur = ? OR ?)
-                ");
-                $stmt->execute([$id_certificat, $_SESSION['id_utilisateur'], estSuperAdmin() || estPromoteur()]);
-                $certificat = $stmt->fetch();
-                
-                if ($certificat) {
-                    $response = ['success' => true, 'data' => $certificat];
-                } else {
-                    $response = ['success' => false, 'message' => 'Certificat non trouvé'];
-                }
-            } else {
-                $response = ['success' => false, 'message' => 'ID manquant'];
-            }
+
+    // ============================================
+    // CERTIFICATS EXCEPTIONNELS (ancien bloc — supprimé, fusionné ci-dessus)
+    // ============================================
+
+    case 'creer_demande_certificat':
+        // Alias pour compatibilité — redirige vers demander_certificat
+        if (estEtudiant()) {
+            $id_module = (int)($_POST['id_module'] ?? 0);
+            $motif     = trim($_POST['motif'] ?? '');
+            if (!$id_module || !$motif) { $response = ['success' => false, 'message' => 'Données manquantes']; break; }
+            $response = creerDemandeCertificat($_SESSION['id_utilisateur'], $id_module, $motif);
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
         break;
 
-        case 'generer_certificat':
-            if (estEtudiant()) {
-                $id_module = $_POST['id_module'] ?? 0;
-                if ($id_module) {
-                    $certificat = genererCertificat($_SESSION['id_utilisateur'], $id_module);
-                    $response = ['success' => !empty($certificat), 'data' => $certificat];
-                    if (empty($certificat)) {
-                        $response['message'] = 'Module non complété à 100%';
-                    }
-                } else {
-                    $response = ['success' => false, 'message' => 'ID module manquant'];
-                }
-            } else {
-                $response = ['success' => false, 'message' => 'Permission refusée'];
-            }
-            break;
-        
-        case 'obtenir_certificat':
-            $id_certificat = $_GET['id'] ?? 0;
-            if ($id_certificat) {
-                $stmt = $pdo->prepare("
-                    SELECT c.*, u.nom, u.prenom, u.email, m.nom_module
-                    FROM certificats c
-                    JOIN utilisateurs u ON c.id_utilisateur = u.id_utilisateur
-                    JOIN modules m ON c.id_module = m.id_module
-                    WHERE c.id_certificat = ? AND c.id_utilisateur = ?
-                ");
-                $stmt->execute([$id_certificat, $_SESSION['id_utilisateur']]);
-                $certificat = $stmt->fetch();
-                
-                if ($certificat) {
-                    $response = ['success' => true, 'data' => $certificat];
-                } else {
-                    $response = ['success' => false, 'message' => 'Certificat non trouvé'];
-                }
-            } else {
-                $response = ['success' => false, 'message' => 'ID manquant'];
-            }
-            break;
     // ============================================
     // GESTION QUIZ — CRUD ENSEIGNANT
     // ============================================
