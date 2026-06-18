@@ -162,7 +162,9 @@
         }
     </style>
 </head>
-<body data-theme="<?= $_COOKIE['gol_theme'] ?? 'light' ?>">
+<body>
+
+<script src="<?= defined('SITE_URL') ? SITE_URL : '/' ?>assets/js/app.js"></script>
 
 <nav class="navbar-premium">
     <div class="nav-container">
@@ -209,48 +211,3 @@
 </nav>
 
 <main class="main-content">
-
-<script>
-function chargerTheme() {
-    const theme = localStorage.getItem('gol_theme') || 'light';
-    document.body.setAttribute('data-theme', theme);
-    
-    const lightIcon = document.querySelector('.theme-icon-light');
-    const darkIcon = document.querySelector('.theme-icon-dark');
-    
-    if (theme === 'dark') {
-        if (lightIcon) lightIcon.style.display = 'none';
-        if (darkIcon) darkIcon.style.display = 'block';
-    } else {
-        if (lightIcon) lightIcon.style.display = 'block';
-        if (darkIcon) darkIcon.style.display = 'none';
-    }
-}
-
-function changerTheme() {
-    const currentTheme = document.body.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.body.setAttribute('data-theme', newTheme);
-    localStorage.setItem('gol_theme', newTheme);
-    
-    const lightIcon = document.querySelector('.theme-icon-light');
-    const darkIcon = document.querySelector('.theme-icon-dark');
-    
-    if (newTheme === 'dark') {
-        if (lightIcon) lightIcon.style.display = 'none';
-        if (darkIcon) darkIcon.style.display = 'block';
-    } else {
-        if (lightIcon) lightIcon.style.display = 'block';
-        if (darkIcon) darkIcon.style.display = 'none';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    chargerTheme();
-    
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', changerTheme);
-    }
-});
-</script>

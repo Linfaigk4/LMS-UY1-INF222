@@ -292,3 +292,47 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('GOL LMS - Initialisé avec succès');
     console.log('Développeur: ESSENGUE BILOA VICTORIEN MICHEL (23U2628)');
 });
+
+// ============================================
+// ALIASES — compatibilité pages existantes
+// ============================================
+
+// Pages qui appellent openModal/closeModal au lieu de ouvrirModal/fermerModal
+function openModal(id)  { ouvrirModal(id); }
+function closeModal(id) { fermerModal(id); }
+
+// escapeHtml global (evaluation.php, gestion_quiz.php, certificat.php)
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+// ============================================
+// STYLES TOAST — injectés si absents
+// ============================================
+(function() {
+    if (document.getElementById('gol-toast-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'gol-toast-styles';
+    s.textContent = `
+        .gol-toast-container{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
+        .toast-notification{padding:.75rem 1.25rem;border-radius:.75rem;font-size:.875rem;font-weight:500;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.15);animation:golSlideIn .3s ease;pointer-events:all;max-width:320px}
+        .toast-succes,.toast-success{background:#22c55e}
+        .toast-danger{background:#ef4444}
+        .toast-info{background:#2563eb}
+        .toast-avertissement{background:#f59e0b}
+        @keyframes golSlideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+    `;
+    document.head.appendChild(s);
+})();
+
+// ============================================
+// THÈME — application immédiate anti-flash
+// ============================================
+(function() {
+    const t = localStorage.getItem('gol_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    document.cookie = 'gol_theme=' + t + '; path=/; max-age=31536000';
+})();

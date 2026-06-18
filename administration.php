@@ -950,13 +950,7 @@ $page_title = 'Administration - GOL';
 <?php endif; ?>
 
 <script>
-function openModal(modalId) {
-    document.getElementById(modalId).classList.add('active');
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-}
+// openModal et closeModal sont définis dans assets/js/app.js
 
 function editModule(id) {
     afficherNotification('Fonctionnalité à venir', 'info');

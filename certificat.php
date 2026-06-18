@@ -726,12 +726,7 @@ function imprimerCertificatData(certificat) {
     printWindow.document.close();
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// escapeHtml est défini dans assets/js/app.js
 
 // Fermer la modal en cliquant en dehors
 document.getElementById('certificatModal')?.addEventListener('click', function(e) {

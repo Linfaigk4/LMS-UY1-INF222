@@ -716,11 +716,7 @@ function soumettreEvaluation() {
     });
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+// escapeHtml est défini dans assets/js/app.js
 
 // Événements
 document.getElementById('nextQuestion')?.addEventListener('click', nextQuestion);
