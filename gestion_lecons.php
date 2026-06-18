@@ -116,11 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Supprimer une leçon
 if (isset($_GET['delete'])) {
     $id_lecon = (int)$_GET['delete'];
-    $resultat = supprimerLecon($id_lecon);
+    // Anti-IDOR : vérifier que la leçon appartient à l'enseignant connecté
+    $id_ens = estSuperAdmin() ? null : $_SESSION['id_utilisateur'];
+    $resultat = supprimerLecon($id_lecon, $id_ens);
     if ($resultat) {
         $message = 'Leçon supprimée avec succès !';
     } else {
-        $error = 'Erreur lors de la suppression.';
+        $error = 'Suppression refusée ou erreur (accès non autorisé).';
     }
 }
 

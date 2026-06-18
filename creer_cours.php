@@ -5,8 +5,8 @@ ini_set('display_errors', 1);
 require_once 'includes/config.php';
 require_once 'includes/fonctions.php';
 
-// Vérifier si l'utilisateur est connecté et est enseignant
-if (!estConnecte() || !estEnseignant()) {
+// Contrôle d'accès strict — enseignant ou super admin uniquement
+if (!estConnecte() || (!estEnseignant() && !estSuperAdmin())) {
     header('Location: connexion.php');
     exit;
 }
@@ -30,8 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($titre) || empty($id_module)) {
         $error = 'Veuillez remplir tous les champs obligatoires.';
     } else {
-        // Créer le slug
-        $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $titre)));
+        // Créer le slug unique
+        $slug = genererSlugUnique($titre);
         
         // Insérer le cours directement
         $stmt = $pdo->prepare("

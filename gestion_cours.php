@@ -12,8 +12,8 @@ ini_set('display_errors', 1);
 require_once 'includes/config.php';
 require_once 'includes/fonctions.php';
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['id_utilisateur'])) {
+// Contrôle d'accès strict — enseignant ou super admin uniquement
+if (!estConnecte() || (!estEnseignant() && !estSuperAdmin())) {
     header('Location: connexion.php');
     exit;
 }
@@ -88,14 +88,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Supprimer une leçon
+// Supprimer une leçon — anti-IDOR
 if (isset($_GET['delete'])) {
     $id_lecon = (int)$_GET['delete'];
-    $stmt = $pdo->prepare("DELETE FROM lecons WHERE id_lecon = ?");
-    if ($stmt->execute([$id_lecon])) {
+    $id_ens   = estSuperAdmin() ? null : $_SESSION['id_utilisateur'];
+    $ok = supprimerLecon($id_lecon, $id_ens);
+    if ($ok) {
         $message = 'Leçon supprimée avec succès !';
     } else {
-        $error = 'Erreur lors de la suppression.';
+        $error = 'Suppression refusée (accès non autorisé ou erreur).';
     }
 }
 

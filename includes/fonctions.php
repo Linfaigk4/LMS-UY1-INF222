@@ -261,16 +261,36 @@ function obtenirCoursParEnseignant($id_enseignant) {
     return $stmt->fetchAll();
 }
 
+/**
+ * Génère un slug unique pour un cours.
+ * Si "cours-test" existe, retourne "cours-test-2", "cours-test-3", etc.
+ */
+function genererSlugUnique(string $titre, int $id_cours_exclu = 0): string {
+    global $pdo;
+    $base = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $titre)));
+    $base = trim($base, '-');
+    $slug = $base;
+    $compteur = 1;
+    do {
+        $stmt = $pdo->prepare("SELECT id_cours FROM cours WHERE slug = ? AND id_cours != ?");
+        $stmt->execute([$slug, $id_cours_exclu]);
+        if ($stmt->fetch()) {
+            $compteur++;
+            $slug = $base . '-' . $compteur;
+        } else {
+            break;
+        }
+    } while (true);
+    return $slug;
+}
+
 function ajouterCours($titre, $description, $objectifs, $difficulte, $duree, $id_module, $id_enseignant, $prerequis = null) {
     global $pdo;
-    
-    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $titre)));
-    
+    $slug = genererSlugUnique($titre);
     $stmt = $pdo->prepare("
         INSERT INTO cours (titre_cours, slug, description, objectifs, difficulte, duree, id_module, id_enseignant, prerequis, statut)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'brouillon')
     ");
-    
     return $stmt->execute([$titre, $slug, $description, $objectifs, $difficulte, $duree, $id_module, $id_enseignant, $prerequis]);
 }
 
@@ -354,8 +374,23 @@ function modifierLecon($id_lecon, $titre, $contenu_texte, $type_contenu, $duree 
     return $stmt->execute([$titre, $contenu_texte, $type_contenu, $fichier_pdf, $url_video, $duree, $id_lecon]);
 }
 
-function supprimerLecon($id_lecon) {
+/**
+ * Supprime une leçon — vérifie que la leçon appartient à l'enseignant connecté.
+ * Super Admin bypass la vérification.
+ * Retourne false si IDOR détecté.
+ */
+function supprimerLecon($id_lecon, $id_enseignant = null) {
     global $pdo;
+    if ($id_enseignant !== null) {
+        // Vérifier propriété : leçon → cours → enseignant
+        $stmt = $pdo->prepare("
+            SELECT l.id_lecon FROM lecons l
+            JOIN cours c ON l.id_cours = c.id_cours
+            WHERE l.id_lecon = ? AND c.id_enseignant = ?
+        ");
+        $stmt->execute([$id_lecon, $id_enseignant]);
+        if (!$stmt->fetch()) return false; // IDOR bloqué
+    }
     $stmt = $pdo->prepare("DELETE FROM lecons WHERE id_lecon = ?");
     return $stmt->execute([$id_lecon]);
 }
@@ -1179,7 +1214,7 @@ function time_elapsed_string($datetime) {
  * Upload sécurisé pour avatars et images (conservé pour l'upload d'avatars).
  * Pour PDF/vidéo des leçons, utiliser uploadFichierLecon().
  */
-function uploadFichier($fichier, $dossier, $extensions_autorisees = ['jpg', 'jpeg', 'png', 'gif', 'svg']) {
+function uploadFichier($fichier, $dossier, $extensions_autorisees = ['jpg', 'jpeg', 'png', 'webp']) {
     if ($fichier['error'] !== UPLOAD_ERR_OK) {
         return ['success' => false, 'message' => 'Erreur lors de l\'upload (code ' . $fichier['error'] . ')'];
     }
@@ -1187,12 +1222,12 @@ function uploadFichier($fichier, $dossier, $extensions_autorisees = ['jpg', 'jpe
     if (!in_array($extension, $extensions_autorisees)) {
         return ['success' => false, 'message' => 'Extension non autorisée : ' . $extension];
     }
-    // Vérification MIME réel
+    // Vérification MIME réel — uniquement images bitmap
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime_reel = $finfo->file($fichier['tmp_name']);
-    $mimes_images = ['image/jpeg','image/png','image/gif','image/svg+xml','image/webp'];
-    if (!in_array($mime_reel, $mimes_images)) {
-        return ['success' => false, 'message' => 'Type de fichier non autorisé'];
+    $mimes_autorises = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!in_array($mime_reel, $mimes_autorises)) {
+        return ['success' => false, 'message' => 'Type de fichier non autorisé (MIME: ' . $mime_reel . ')'];
     }
     if ($fichier['size'] > MAX_AVATAR_SIZE) {
         return ['success' => false, 'message' => 'Fichier trop lourd (max 2 Mo)'];

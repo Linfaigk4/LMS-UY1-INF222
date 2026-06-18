@@ -594,6 +594,71 @@ switch ($action) {
         break;
 
     // ============================================
+    // GESTION COURS — CRUD sécurisé (enseignant)
+    // ============================================
+
+    case 'supprimer_cours':
+        if (estEnseignant() || estSuperAdmin()) {
+            $id_cours = (int)($_POST['id_cours'] ?? 0);
+            if (!$id_cours) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+            // Vérifier propriété
+            if (!estSuperAdmin()) {
+                $stmtV = $pdo->prepare("SELECT id_cours FROM cours WHERE id_cours = ? AND id_enseignant = ?");
+                $stmtV->execute([$id_cours, $_SESSION['id_utilisateur']]);
+                if (!$stmtV->fetch()) { $response = ['success' => false, 'message' => 'Accès refusé']; break; }
+            }
+            $ok = supprimerCours($id_cours);
+            $response = ['success' => $ok, 'message' => $ok ? 'Cours supprimé' : 'Erreur'];
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+
+    case 'publier_cours':
+        if (estEnseignant() || estSuperAdmin()) {
+            $id_cours = (int)($_POST['id_cours'] ?? 0);
+            if (!$id_cours) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+            if (!estSuperAdmin()) {
+                $stmtV = $pdo->prepare("SELECT id_cours FROM cours WHERE id_cours = ? AND id_enseignant = ?");
+                $stmtV->execute([$id_cours, $_SESSION['id_utilisateur']]);
+                if (!$stmtV->fetch()) { $response = ['success' => false, 'message' => 'Accès refusé']; break; }
+            }
+            // Vérifier qu'au moins une leçon avec évaluation existe
+            $stmtL = $pdo->prepare("
+                SELECT COUNT(*) as nb FROM lecons l
+                JOIN evaluations e ON e.id_lecon = l.id_lecon AND e.actif = 1
+                WHERE l.id_cours = ?
+            ");
+            $stmtL->execute([$id_cours]);
+            $nb = (int)$stmtL->fetch()['nb'];
+            if ($nb === 0) {
+                $response = ['success' => false, 'message' => 'Le cours doit avoir au moins une leçon avec évaluation'];
+                break;
+            }
+            $ok = publierCours($id_cours);
+            $response = ['success' => $ok, 'message' => $ok ? 'Cours publié' : 'Erreur'];
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+
+    // ============================================
+    // GESTION LEÇONS — CRUD sécurisé (enseignant)
+    // ============================================
+
+    case 'supprimer_lecon':
+        if (estEnseignant() || estSuperAdmin()) {
+            $id_lecon = (int)($_POST['id_lecon'] ?? 0);
+            if (!$id_lecon) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+            $id_ens = estSuperAdmin() ? null : $_SESSION['id_utilisateur'];
+            $ok = supprimerLecon($id_lecon, $id_ens);
+            $response = ['success' => (bool)$ok, 'message' => $ok ? 'Leçon supprimée' : 'Accès refusé ou erreur'];
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+
+    // ============================================
     // ACTION PAR DÉFAUT
     // ============================================
 
