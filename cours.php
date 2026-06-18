@@ -409,30 +409,45 @@ $page_title = $cours['titre_cours'] . ' - GOL';
                     <div class="content-body">
                         <?php if ($lecon_actuelle['type_contenu'] === 'video' && $lecon_actuelle['url_video']): ?>
                             <div class="video-container">
-                                <?php 
+                                <?php
                                 $video_url = $lecon_actuelle['url_video'];
                                 if (strpos($video_url, 'youtube.com') !== false || strpos($video_url, 'youtu.be') !== false):
-                                    // Extraire l'ID YouTube
                                     preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/', $video_url, $matches);
                                     $youtube_id = $matches[1] ?? '';
                                     if ($youtube_id):
                                 ?>
                                     <iframe src="https://www.youtube.com/embed/<?= $youtube_id ?>" frameborder="0" allowfullscreen></iframe>
-                                <?php 
+                                <?php
                                     endif;
-                                else:
+                                elseif (strpos($video_url, 'vimeo.com') !== false):
+                                    preg_match('/vimeo\.com\/(\d+)/', $video_url, $mv);
+                                    $vimeo_id = $mv[1] ?? '';
                                 ?>
-                                    <video controls>
-                                        <source src="<?= htmlspecialchars($video_url) ?>" type="video/mp4">
+                                    <iframe src="https://player.vimeo.com/video/<?= $vimeo_id ?>" frameborder="0" allowfullscreen></iframe>
+                                <?php else:
+                                    // Fichier local — construire l'URL absolue
+                                    $video_src = SITE_URL . ltrim($video_url, '/');
+                                    $ext_v = strtolower(pathinfo($video_url, PATHINFO_EXTENSION));
+                                    $mime_v = $ext_v === 'webm' ? 'video/webm' : ($ext_v === 'ogg' ? 'video/ogg' : 'video/mp4');
+                                ?>
+                                    <video controls style="width:100%;border-radius:var(--radius-lg)">
+                                        <source src="<?= htmlspecialchars($video_src) ?>" type="<?= $mime_v ?>">
                                         Votre navigateur ne supporte pas la lecture vidéo.
                                     </video>
                                 <?php endif; ?>
                             </div>
                         <?php endif; ?>
-                        
+
                         <?php if ($lecon_actuelle['type_contenu'] === 'pdf' && $lecon_actuelle['fichier_pdf']): ?>
                             <div class="pdf-viewer">
-                                <iframe src="<?= htmlspecialchars($lecon_actuelle['fichier_pdf']) ?>" frameborder="0"></iframe>
+                                <?php $pdf_src = SITE_URL . ltrim($lecon_actuelle['fichier_pdf'], '/'); ?>
+                                <iframe src="<?= htmlspecialchars($pdf_src) ?>#toolbar=1" frameborder="0"></iframe>
+                                <div style="margin-top:var(--spacing-3);text-align:right">
+                                    <a href="<?= htmlspecialchars($pdf_src) ?>" target="_blank" rel="noopener"
+                                       style="font-size:0.8rem;color:var(--primaire)">
+                                        Ouvrir le PDF dans un nouvel onglet
+                                    </a>
+                                </div>
                             </div>
                         <?php endif; ?>
                         

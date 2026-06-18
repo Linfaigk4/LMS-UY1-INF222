@@ -1175,29 +1175,110 @@ function time_elapsed_string($datetime) {
     return 'à l\'instant';
 }
 
-function uploadFichier($fichier, $dossier, $extensions_autorisees = ['pdf', 'jpg', 'jpeg', 'png']) {
+/**
+ * Upload sécurisé pour avatars et images (conservé pour l'upload d'avatars).
+ * Pour PDF/vidéo des leçons, utiliser uploadFichierLecon().
+ */
+function uploadFichier($fichier, $dossier, $extensions_autorisees = ['jpg', 'jpeg', 'png', 'gif', 'svg']) {
     if ($fichier['error'] !== UPLOAD_ERR_OK) {
-        return ['success' => false, 'message' => 'Erreur lors de l\'upload'];
+        return ['success' => false, 'message' => 'Erreur lors de l\'upload (code ' . $fichier['error'] . ')'];
     }
-    
     $extension = strtolower(pathinfo($fichier['name'], PATHINFO_EXTENSION));
-    
     if (!in_array($extension, $extensions_autorisees)) {
-        return ['success' => false, 'message' => 'Extension non autorisée'];
+        return ['success' => false, 'message' => 'Extension non autorisée : ' . $extension];
     }
-    
-    $nom_fichier = uniqid() . '.' . $extension;
+    // Vérification MIME réel
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime_reel = $finfo->file($fichier['tmp_name']);
+    $mimes_images = ['image/jpeg','image/png','image/gif','image/svg+xml','image/webp'];
+    if (!in_array($mime_reel, $mimes_images)) {
+        return ['success' => false, 'message' => 'Type de fichier non autorisé'];
+    }
+    if ($fichier['size'] > MAX_AVATAR_SIZE) {
+        return ['success' => false, 'message' => 'Fichier trop lourd (max 2 Mo)'];
+    }
+    if (!is_dir($dossier)) mkdir($dossier, 0755, true);
+    $nom_fichier = 'avatar_' . uniqid() . '.' . $extension;
     $chemin = $dossier . $nom_fichier;
-    
-    if (!is_dir($dossier)) {
-        mkdir($dossier, 0777, true);
-    }
-    
     if (move_uploaded_file($fichier['tmp_name'], $chemin)) {
         return ['success' => true, 'fichier' => $nom_fichier, 'chemin' => $chemin];
     }
-    
     return ['success' => false, 'message' => 'Erreur lors du déplacement du fichier'];
+}
+
+/**
+ * Upload sécurisé centralisé pour les ressources de leçons (PDF et vidéo).
+ *
+ * @param array  $fichier  Entrée $_FILES['...']
+ * @param string $type     'pdf' ou 'video'
+ * @return array           ['success'=>bool, 'chemin'=>string, 'message'=>string]
+ *
+ * Chemin retourné (relatif à la racine du projet) :
+ *   uploads/pdf/pdf_XXXX.pdf
+ *   uploads/videos/video_XXXX.mp4
+ */
+function uploadFichierLecon(array $fichier, string $type): array {
+    // Vérifier l'erreur PHP
+    if ($fichier['error'] !== UPLOAD_ERR_OK) {
+        $erreurs = [
+            UPLOAD_ERR_INI_SIZE   => 'Fichier trop lourd (limite serveur)',
+            UPLOAD_ERR_FORM_SIZE  => 'Fichier trop lourd (limite formulaire)',
+            UPLOAD_ERR_PARTIAL    => 'Upload incomplet',
+            UPLOAD_ERR_NO_FILE    => 'Aucun fichier reçu',
+        ];
+        return ['success' => false, 'message' => $erreurs[$fichier['error']] ?? 'Erreur upload code ' . $fichier['error']];
+    }
+
+    $extension = strtolower(pathinfo($fichier['name'], PATHINFO_EXTENSION));
+
+    if ($type === 'pdf') {
+        $extensions_ok = ['pdf'];
+        $mimes_ok      = ['application/pdf'];
+        $taille_max    = 20 * 1024 * 1024; // 20 Mo
+        $dossier       = UPLOAD_PDF;
+        $prefixe       = 'pdf_';
+    } elseif ($type === 'video') {
+        $extensions_ok = ['mp4', 'webm', 'ogg'];
+        $mimes_ok      = ['video/mp4', 'video/webm', 'video/ogg', 'video/x-msvideo'];
+        $taille_max    = 50 * 1024 * 1024; // 50 Mo
+        $dossier       = UPLOAD_VIDEOS;
+        $prefixe       = 'video_';
+    } else {
+        return ['success' => false, 'message' => 'Type d\'upload inconnu : ' . $type];
+    }
+
+    // Vérifier l'extension
+    if (!in_array($extension, $extensions_ok)) {
+        return ['success' => false, 'message' => 'Extension non autorisée. Formats acceptés : ' . implode(', ', $extensions_ok)];
+    }
+
+    // Vérifier la taille
+    if ($fichier['size'] > $taille_max) {
+        return ['success' => false, 'message' => 'Fichier trop lourd. Maximum : ' . ($taille_max / 1024 / 1024) . ' Mo'];
+    }
+
+    // Vérifier le MIME réel via finfo
+    $finfo     = new finfo(FILEINFO_MIME_TYPE);
+    $mime_reel = $finfo->file($fichier['tmp_name']);
+    if (!in_array($mime_reel, $mimes_ok)) {
+        return ['success' => false, 'message' => 'Type MIME invalide détecté : ' . $mime_reel];
+    }
+
+    // Créer le dossier si nécessaire
+    if (!is_dir($dossier)) mkdir($dossier, 0755, true);
+
+    // Nom de fichier sécurisé
+    $nom_fichier = $prefixe . uniqid() . '.' . $extension;
+    $chemin_absolu = $dossier . $nom_fichier;
+
+    if (!move_uploaded_file($fichier['tmp_name'], $chemin_absolu)) {
+        return ['success' => false, 'message' => 'Erreur lors de la copie du fichier sur le serveur'];
+    }
+
+    // Retourner le chemin relatif (stocké en base)
+    $chemin_relatif = ($type === 'pdf') ? 'uploads/pdf/' . $nom_fichier : 'uploads/videos/' . $nom_fichier;
+
+    return ['success' => true, 'chemin' => $chemin_relatif, 'fichier' => $nom_fichier];
 }
 
 function obtenirTousUtilisateurs() {

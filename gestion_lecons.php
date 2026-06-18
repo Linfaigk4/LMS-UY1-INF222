@@ -26,64 +26,42 @@ if (!$cours || $cours['id_enseignant'] != $_SESSION['id_utilisateur']) {
 $message = '';
 $error = '';
 
-// Upload de fichier
-function uploadFichierLecon($fichier, $type) {
-    $upload_dir = __DIR__ . '/uploads/' . $type . '/';
-    if (!is_dir($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
-    }
-    
-    $extension = strtolower(pathinfo($fichier['name'], PATHINFO_EXTENSION));
-    $allowed = $type === 'pdf' ? ['pdf'] : ['mp4', 'webm', 'ogg'];
-    
-    if (!in_array($extension, $allowed)) {
-        return ['success' => false, 'message' => 'Extension non autorisée'];
-    }
-    
-    $nom_fichier = uniqid() . '.' . $extension;
-    $chemin = $upload_dir . $nom_fichier;
-    
-    if (move_uploaded_file($fichier['tmp_name'], $chemin)) {
-        return ['success' => true, 'fichier' => 'uploads/' . $type . '/' . $nom_fichier];
-    }
-    
-    return ['success' => false, 'message' => 'Erreur lors de l\'upload'];
-}
+// La fonction uploadFichierLecon() est définie dans includes/fonctions.php
 
 // Ajouter une leçon
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
-    $titre = trim($_POST['titre'] ?? '');
+    $titre         = trim($_POST['titre'] ?? '');
     $contenu_texte = trim($_POST['contenu_texte'] ?? '');
-    $type_contenu = $_POST['type_contenu'] ?? 'texte';
-    $duree = (int)($_POST['duree'] ?? 0);
-    $fichier_pdf = null;
-    $url_video = null;
-    
-    if ($type_contenu === 'pdf' && isset($_FILES['fichier_pdf']) && $_FILES['fichier_pdf']['error'] === UPLOAD_ERR_OK) {
+    $type_contenu  = $_POST['type_contenu'] ?? 'texte';
+    $duree         = (int)($_POST['duree'] ?? 0);
+    $fichier_pdf   = null;
+    $url_video     = null;
+
+    if ($type_contenu === 'pdf' && isset($_FILES['fichier_pdf']) && $_FILES['fichier_pdf']['error'] !== UPLOAD_ERR_NO_FILE) {
         $upload = uploadFichierLecon($_FILES['fichier_pdf'], 'pdf');
         if ($upload['success']) {
-            $fichier_pdf = $upload['fichier'];
+            $fichier_pdf = $upload['chemin'];
         } else {
             $error = $upload['message'];
         }
     }
-    
-    if ($type_contenu === 'video' && isset($_FILES['fichier_video']) && $_FILES['fichier_video']['error'] === UPLOAD_ERR_OK) {
-        $upload = uploadFichierLecon($_FILES['fichier_video'], 'videos');
+
+    if ($type_contenu === 'video' && isset($_FILES['fichier_video']) && $_FILES['fichier_video']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $upload = uploadFichierLecon($_FILES['fichier_video'], 'video');
         if ($upload['success']) {
-            $url_video = $upload['fichier'];
+            $url_video = $upload['chemin'];
         } else {
             $error = $upload['message'];
         }
     }
-    
-    if ($type_contenu === 'video' && !empty($_POST['url_video'])) {
-        $url_video = $_POST['url_video'];
+
+    if ($type_contenu === 'video' && empty($url_video) && !empty($_POST['url_video'])) {
+        $url_video = trim($_POST['url_video']);
     }
-    
+
     if (empty($titre)) {
         $error = 'Veuillez entrer un titre.';
-    } else {
+    } elseif (empty($error)) {
         $resultat = ajouterLecon($titre, $contenu_texte, $type_contenu, $id_cours, $duree, $fichier_pdf, $url_video);
         if ($resultat) {
             $message = 'Leçon ajoutée avec succès !';
@@ -95,37 +73,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Modifier une leçon
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit') {
-    $id_lecon = (int)($_POST['id_lecon'] ?? 0);
-    $titre = trim($_POST['titre'] ?? '');
+    $id_lecon      = (int)($_POST['id_lecon'] ?? 0);
+    $titre         = trim($_POST['titre'] ?? '');
     $contenu_texte = trim($_POST['contenu_texte'] ?? '');
-    $type_contenu = $_POST['type_contenu'] ?? 'texte';
-    $duree = (int)($_POST['duree'] ?? 0);
-    $fichier_pdf = $_POST['fichier_pdf_existant'] ?? null;
-    $url_video = $_POST['url_video_existante'] ?? null;
-    
-    if ($type_contenu === 'pdf' && isset($_FILES['fichier_pdf']) && $_FILES['fichier_pdf']['error'] === UPLOAD_ERR_OK) {
+    $type_contenu  = $_POST['type_contenu'] ?? 'texte';
+    $duree         = (int)($_POST['duree'] ?? 0);
+    $fichier_pdf   = $_POST['fichier_pdf_existant'] ?? null;
+    $url_video     = $_POST['url_video_existante'] ?? null;
+
+    if ($type_contenu === 'pdf' && isset($_FILES['fichier_pdf']) && $_FILES['fichier_pdf']['error'] !== UPLOAD_ERR_NO_FILE) {
         $upload = uploadFichierLecon($_FILES['fichier_pdf'], 'pdf');
         if ($upload['success']) {
-            $fichier_pdf = $upload['fichier'];
+            $fichier_pdf = $upload['chemin'];
+        } else {
+            $error = $upload['message'];
         }
     }
-    
-    if ($type_contenu === 'video' && isset($_FILES['fichier_video']) && $_FILES['fichier_video']['error'] === UPLOAD_ERR_OK) {
-        $upload = uploadFichierLecon($_FILES['fichier_video'], 'videos');
+
+    if ($type_contenu === 'video' && isset($_FILES['fichier_video']) && $_FILES['fichier_video']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $upload = uploadFichierLecon($_FILES['fichier_video'], 'video');
         if ($upload['success']) {
-            $url_video = $upload['fichier'];
+            $url_video = $upload['chemin'];
+        } else {
+            $error = $upload['message'];
         }
     }
-    
-    if ($type_contenu === 'video' && !empty($_POST['url_video'])) {
-        $url_video = $_POST['url_video'];
+
+    if ($type_contenu === 'video' && empty($url_video) && !empty($_POST['url_video'])) {
+        $url_video = trim($_POST['url_video']);
     }
-    
-    $resultat = modifierLecon($id_lecon, $titre, $contenu_texte, $type_contenu, $duree, $fichier_pdf, $url_video);
-    if ($resultat) {
-        $message = 'Leçon modifiée avec succès !';
-    } else {
-        $error = 'Erreur lors de la modification.';
+
+    if (empty($error)) {
+        $resultat = modifierLecon($id_lecon, $titre, $contenu_texte, $type_contenu, $duree, $fichier_pdf, $url_video);
+        if ($resultat) {
+            $message = 'Leçon modifiée avec succès !';
+        } else {
+            $error = 'Erreur lors de la modification.';
+        }
     }
 }
 
