@@ -131,13 +131,32 @@ switch ($action) {
     
     case 'soumettre_evaluation':
         if (estEtudiant()) {
-            $id_evaluation = $_POST['evaluation_id'] ?? 0;
-            $reponses = $_POST['reponses'] ?? [];
+            $id_evaluation  = (int)($_POST['evaluation_id'] ?? 0);
+            $reponses       = $_POST['reponses'] ?? [];
             $temps_consacre = $_POST['temps_consacre'] ?? null;
-            
+
             if ($id_evaluation && !empty($reponses)) {
-                $resultat = enregistrerResultat($_SESSION['id_utilisateur'], $id_evaluation, $reponses, $temps_consacre);
-                $response = $resultat;
+                $score = calculerScore($reponses, $id_evaluation);
+                // Récupérer la note requise et la leçon associée
+                $stmtE = $pdo->prepare("SELECT note_requise, id_lecon FROM evaluations WHERE id_evaluation = ?");
+                $stmtE->execute([$id_evaluation]);
+                $eval_data = $stmtE->fetch();
+                $reussi = $eval_data && $score >= (float)$eval_data['note_requise'];
+
+                // Enregistrer le résultat
+                enregistrerResultat($_SESSION['id_utilisateur'], $id_evaluation, $reponses, $temps_consacre);
+
+                // Si quiz réussi → statut leçon = 100
+                if ($reussi && $eval_data) {
+                    validerLeconApresQuiz($_SESSION['id_utilisateur'], $eval_data['id_lecon']);
+                }
+
+                $response = [
+                    'success' => true,
+                    'score'   => $score,
+                    'reussi'  => $reussi,
+                    'message' => $reussi ? 'Évaluation réussie !' : 'Score insuffisant'
+                ];
             } else {
                 $response = ['success' => false, 'message' => 'Données manquantes'];
             }
@@ -149,30 +168,44 @@ switch ($action) {
     // ============================================
     // MISE À JOUR DE LA PROGRESSION
     // ============================================
-    
+
     case 'maj_progression':
         if (estEtudiant()) {
-            $id_lecon = $_POST['lecon_id'] ?? 0;
-            $terminee = $_POST['terminee'] ?? true;
-            
-            if ($id_lecon && $terminee) {
-                $resultat = marquerLeconTerminee($_SESSION['id_utilisateur'], $id_lecon);
-                
-                // Récupérer le nouveau pourcentage
-                global $pdo;
-                $stmt = $pdo->prepare("
-                    SELECT pourcentage FROM progression_cours 
-                    WHERE id_utilisateur = ? AND id_cours = (
-                        SELECT id_cours FROM lecons WHERE id_lecon = ?
-                    )
-                ");
-                $stmt->execute([$_SESSION['id_utilisateur'], $id_lecon]);
-                $progression = $stmt->fetch();
-                
+            $id_lecon = (int)($_POST['lecon_id'] ?? 0);
+            $action   = $_POST['action_progression'] ?? 'ouvrir'; // 'ouvrir' ou 'valider'
+
+            if ($id_lecon) {
+                if ($action === 'valider') {
+                    $ok = validerLeconApresQuiz($_SESSION['id_utilisateur'], $id_lecon);
+                } else {
+                    $ok = ouvrirLecon($_SESSION['id_utilisateur'], $id_lecon);
+                }
+                // Récupérer pourcentages mis à jour
+                $stmtC = $pdo->prepare("SELECT id_cours FROM lecons WHERE id_lecon = ?");
+                $stmtC->execute([$id_lecon]);
+                $rowC = $stmtC->fetch();
+                $pct_cours = 0;
+                $pct_module = 0;
+                if ($rowC) {
+                    $stmtPC = $pdo->prepare("SELECT pourcentage FROM progression_cours WHERE id_utilisateur = ? AND id_cours = ?");
+                    $stmtPC->execute([$_SESSION['id_utilisateur'], $rowC['id_cours']]);
+                    $rowPC = $stmtPC->fetch();
+                    $pct_cours = $rowPC ? round($rowPC['pourcentage'], 0) : 0;
+                    $stmtM = $pdo->prepare("SELECT id_module FROM cours WHERE id_cours = ?");
+                    $stmtM->execute([$rowC['id_cours']]);
+                    $rowM = $stmtM->fetch();
+                    if ($rowM) {
+                        $stmtPM = $pdo->prepare("SELECT progression_globale FROM inscriptions_modules WHERE id_utilisateur = ? AND id_module = ?");
+                        $stmtPM->execute([$_SESSION['id_utilisateur'], $rowM['id_module']]);
+                        $rowPM = $stmtPM->fetch();
+                        $pct_module = $rowPM ? round($rowPM['progression_globale'], 0) : 0;
+                    }
+                }
                 $response = [
-                    'success' => $resultat, 
-                    'pourcentage' => $progression['pourcentage'] ?? 0,
-                    'message' => $resultat ? 'Progression mise à jour' : 'Erreur'
+                    'success'         => $ok,
+                    'pourcentage'     => $pct_cours,
+                    'pct_module'      => $pct_module,
+                    'message'         => $ok ? 'Progression mise à jour' : 'Erreur'
                 ];
             } else {
                 $response = ['success' => false, 'message' => 'Données manquantes'];
@@ -182,6 +215,24 @@ switch ($action) {
         }
         break;
     
+    // ============================================
+    // INSCRIPTION MODULE (appelé depuis module.php)
+    // ============================================
+
+    case 'inscrire_module':
+        if (estEtudiant()) {
+            $id_module = (int)($_POST['id_module'] ?? 0);
+            if ($id_module) {
+                $resultat = inscrireEtudiantModule($_SESSION['id_utilisateur'], $id_module);
+                $response = $resultat;
+            } else {
+                $response = ['success' => false, 'message' => 'ID module manquant'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Permission refusée'];
+        }
+        break;
+
     // ============================================
     // RECHERCHE EN TEMPS RÉEL
     // ============================================

@@ -409,6 +409,134 @@ function marquerLeconTerminee($id_utilisateur, $id_lecon) {
 }
 
 // ============================================
+// FONCTIONS PROGRESSION (nouvelle logique 0/50/100)
+// ============================================
+
+/**
+ * Enregistre l'ouverture d'une leçon par un étudiant (statut 50).
+ * Utilise INSERT ... ON DUPLICATE KEY pour ne pas rétrograder un statut 100.
+ */
+function ouvrirLecon($id_utilisateur, $id_lecon) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        INSERT INTO progression_lecons (id_utilisateur, id_lecon, statut)
+        VALUES (?, ?, 50)
+        ON DUPLICATE KEY UPDATE statut = IF(statut < 50, 50, statut)
+    ");
+    if ($stmt->execute([$id_utilisateur, $id_lecon])) {
+        // Récupérer le cours pour synchroniser
+        $stmtL = $pdo->prepare("SELECT id_cours FROM lecons WHERE id_lecon = ?");
+        $stmtL->execute([$id_lecon]);
+        $row = $stmtL->fetch();
+        if ($row) {
+            synchroniserProgressionCours($id_utilisateur, $row['id_cours']);
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Marque le quiz d'une leçon comme réussi (statut 100).
+ * Appelé après un quiz réussi.
+ */
+function validerLeconApresQuiz($id_utilisateur, $id_lecon) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        INSERT INTO progression_lecons (id_utilisateur, id_lecon, statut, date_completion)
+        VALUES (?, ?, 100, NOW())
+        ON DUPLICATE KEY UPDATE statut = 100, date_completion = NOW()
+    ");
+    if ($stmt->execute([$id_utilisateur, $id_lecon])) {
+        $stmtL = $pdo->prepare("SELECT id_cours FROM lecons WHERE id_lecon = ?");
+        $stmtL->execute([$id_lecon]);
+        $row = $stmtL->fetch();
+        if ($row) {
+            synchroniserProgressionCours($id_utilisateur, $row['id_cours']);
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Calcule et synchronise la progression d'un cours.
+ * Progression cours = moyenne des statuts de toutes les leçons du cours.
+ * Met à jour progression_cours.pourcentage et inscriptions_modules.progression_globale.
+ */
+function synchroniserProgressionCours($id_utilisateur, $id_cours) {
+    global $pdo;
+    // Nombre total de leçons du cours
+    $stmtTotal = $pdo->prepare("SELECT COUNT(*) as total FROM lecons WHERE id_cours = ?");
+    $stmtTotal->execute([$id_cours]);
+    $total = (int)$stmtTotal->fetch()['total'];
+    if ($total === 0) return 0;
+
+    // Somme des statuts enregistrés
+    $stmtSomme = $pdo->prepare("
+        SELECT COALESCE(SUM(pl.statut), 0) as somme
+        FROM lecons l
+        LEFT JOIN progression_lecons pl ON pl.id_lecon = l.id_lecon AND pl.id_utilisateur = ?
+        WHERE l.id_cours = ?
+    ");
+    $stmtSomme->execute([$id_utilisateur, $id_cours]);
+    $somme = (float)$stmtSomme->fetch()['somme'];
+
+    $pourcentage = round($somme / $total, 2);
+    $statut = ($pourcentage >= 100) ? 'termine' : 'en_cours';
+
+    // Mettre à jour progression_cours
+    $stmtUpsert = $pdo->prepare("
+        INSERT INTO progression_cours (id_utilisateur, id_cours, pourcentage, statut, dernier_acces)
+        VALUES (?, ?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE pourcentage = ?, statut = ?, dernier_acces = NOW()
+    ");
+    $stmtUpsert->execute([$id_utilisateur, $id_cours, $pourcentage, $statut, $pourcentage, $statut]);
+
+    // Synchroniser le module
+    $stmtModule = $pdo->prepare("SELECT id_module FROM cours WHERE id_cours = ?");
+    $stmtModule->execute([$id_cours]);
+    $rowM = $stmtModule->fetch();
+    if ($rowM) {
+        synchroniserProgressionModule($id_utilisateur, $rowM['id_module']);
+    }
+    return $pourcentage;
+}
+
+/**
+ * Calcule et synchronise la progression d'un module.
+ * Progression module = moyenne des progressions des cours publiés.
+ * Met à jour inscriptions_modules.progression_globale.
+ */
+function synchroniserProgressionModule($id_utilisateur, $id_module) {
+    global $pdo;
+    $stmtCours = $pdo->prepare("SELECT id_cours FROM cours WHERE id_module = ? AND statut = 'publie'");
+    $stmtCours->execute([$id_module]);
+    $cours_list = $stmtCours->fetchAll();
+    $total = count($cours_list);
+    if ($total === 0) return 0;
+
+    $somme = 0;
+    foreach ($cours_list as $c) {
+        $stmtP = $pdo->prepare("SELECT pourcentage FROM progression_cours WHERE id_utilisateur = ? AND id_cours = ?");
+        $stmtP->execute([$id_utilisateur, $c['id_cours']]);
+        $row = $stmtP->fetch();
+        $somme += $row ? (float)$row['pourcentage'] : 0;
+    }
+    $progression_globale = round($somme / $total, 2);
+    $statut = ($progression_globale >= 100) ? 'termine' : 'en_cours';
+
+    $stmtUpd = $pdo->prepare("
+        UPDATE inscriptions_modules
+        SET progression_globale = ?, statut = ?, date_completion = IF(? >= 100, NOW(), NULL)
+        WHERE id_utilisateur = ? AND id_module = ?
+    ");
+    $stmtUpd->execute([$progression_globale, $statut, $progression_globale, $id_utilisateur, $id_module]);
+
+    return $progression_globale;
+}
+
+// ============================================
 // FONCTIONS ÉVALUATIONS
 // ============================================
 
@@ -1070,3 +1198,36 @@ function obtenirProgressionCours($id_utilisateur, $id_cours) {
 
 // Fin du fichier fonctions.php
 ?>
+
+// ============================================
+// FONCTION RECHERCHE GLOBALE
+// ============================================
+
+/**
+ * Recherche dans les modules et cours publiés.
+ * Utilisée par l'endpoint AJAX 'recherche'.
+ */
+function rechercherGlobal($terme) {
+    global $pdo;
+    $like = '%' . $terme . '%';
+    $resultats = ['modules' => [], 'cours' => []];
+
+    $stmtM = $pdo->prepare("
+        SELECT id_module, nom_module, description, niveau
+        FROM modules WHERE actif = 1 AND (nom_module LIKE ? OR description LIKE ?)
+        LIMIT 5
+    ");
+    $stmtM->execute([$like, $like]);
+    $resultats['modules'] = $stmtM->fetchAll();
+
+    $stmtC = $pdo->prepare("
+        SELECT c.id_cours, c.titre_cours, c.description, m.nom_module
+        FROM cours c JOIN modules m ON c.id_module = m.id_module
+        WHERE c.statut = 'publie' AND (c.titre_cours LIKE ? OR c.description LIKE ?)
+        LIMIT 5
+    ");
+    $stmtC->execute([$like, $like]);
+    $resultats['cours'] = $stmtC->fetchAll();
+
+    return $resultats;
+}
