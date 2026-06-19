@@ -943,3 +943,219 @@ body {
     color: var(--texte);
     transition: background var(--transition-base), color var(--transition-base);
 }
+
+/* ============================================
+   HAMBURGER + SIDEBAR MOBILE
+   ============================================ */
+
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--texte-secondaire);
+    padding: 0.4rem;
+    border-radius: var(--radius-md);
+    transition: background var(--transition-base);
+}
+
+.hamburger-btn:hover {
+    background: var(--fond-secondaire);
+    color: var(--primaire);
+}
+
+/* Overlay */
+.mobile-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(2px);
+    z-index: 1099;
+}
+
+.mobile-overlay.visible { display: block; }
+
+/* Sidebar mobile */
+.mobile-sidebar {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    width: 280px;
+    height: 100vh;
+    background: var(--carte);
+    border-left: 1px solid var(--bordure);
+    z-index: 1100;
+    transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.mobile-sidebar.open { right: 0; }
+
+.mobile-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--bordure);
+}
+
+.mobile-close-btn {
+    background: var(--fond-secondaire);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--texte-secondaire);
+    transition: all var(--transition-base);
+}
+
+.mobile-close-btn:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.mobile-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 0;
+    flex: 1;
+}
+
+.mobile-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    color: var(--texte-secondaire);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-base);
+    border-left: 3px solid transparent;
+}
+
+.mobile-nav-link:hover,
+.mobile-nav-link:focus {
+    background: var(--fond-secondaire);
+    color: var(--primaire);
+    border-left-color: var(--primaire);
+}
+
+.mobile-nav-divider {
+    height: 1px;
+    background: var(--bordure);
+    margin: 0.5rem 1.25rem;
+}
+
+.mobile-nav-logout {
+    color: var(--danger);
+    margin-top: auto;
+}
+
+.mobile-nav-logout:hover {
+    background: rgba(239,68,68,0.08);
+    color: var(--danger);
+    border-left-color: var(--danger);
+}
+
+/* ============================================
+   RESPONSIVE GLOBAL — BREAKPOINTS
+   ============================================ */
+
+/* Tablette large */
+@media (max-width: 1200px) {
+    .nav-menu { gap: 1.25rem; }
+    .container, .nav-container { max-width: 100%; padding: 0 1.5rem; }
+}
+
+/* Tablette */
+@media (max-width: 992px) {
+    .dashboard-main,
+    .lecons-container { grid-template-columns: 1fr !important; }
+    .stats-grid,
+    .stats-admin-grid { grid-template-columns: repeat(2,1fr); }
+    .admin-container { flex-direction: column; }
+    .admin-sidebar { width: 100%; position: relative; height: auto; }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    body { padding-top: 60px; }
+    .hamburger-btn { display: flex; }
+    .nav-menu { display: none; }
+    .btn-logout { display: none; }  /* Disponible dans sidebar mobile */
+
+    /* Grilles → 1 colonne */
+    .stats-grid,
+    .stats-admin-grid,
+    .role-cards,
+    .modules-grid,
+    .features-grid,
+    .testimonials-grid,
+    .certificats-grid,
+    .objectifs-grid { grid-template-columns: 1fr; }
+
+    .form-grid-2,
+    .form-row { grid-template-columns: 1fr !important; gap: 0; }
+
+    /* Tableaux — scroll horizontal */
+    .admin-table,
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+
+    /* Modales */
+    .modal-content,
+    .modal-box { width: 96%; max-height: 92vh; }
+
+    /* Header pages */
+    .cours-title,
+    .module-title { font-size: 1.5rem; }
+
+    /* Quiz */
+    .evaluation-container { padding: 1rem; }
+    .questions-progress { display: none; }
+
+    /* Admin content */
+    .admin-content { padding: 1rem; }
+
+    /* Dashboard */
+    .dashboard-container { padding: 1rem; }
+    .welcome-title { font-size: 1.4rem; }
+
+    /* Sidebar leçons */
+    .lecons-sidebar { position: relative; top: 0; }
+
+    /* Quiz cards */
+    .quiz-container { padding: 1rem; }
+
+    /* Certificat */
+    .certificats-container { padding: 1rem; }
+}
+
+/* Très petit mobile */
+@media (max-width: 480px) {
+    .navbar-premium { padding: 0.5rem 1rem; }
+    .eval-meta,
+    .evaluation-meta { flex-direction: column; gap: 0.5rem; }
+    .cours-infos,
+    .module-meta { flex-direction: column; gap: 0.5rem; }
+    .btn-primaire,
+    .btn-hero-primary { padding: 0.625rem 1rem; font-size: 0.8rem; }
+    .lecon-actions { flex-direction: column; }
+}
+
+/* Ultra-wide */
+@media (min-width: 1440px) {
+    .container, .nav-container,
+    .dashboard-container,
+    .quiz-container,
+    .evaluation-container,
+    .lecons-container,
+    .module-hero-content { max-width: 1400px; margin-inline: auto; }
+}

@@ -336,3 +336,47 @@ function escapeHtml(text) {
     document.documentElement.setAttribute('data-theme', t);
     document.cookie = 'gol_theme=' + t + '; path=/; max-age=31536000';
 })();
+
+// ============================================
+// MENU HAMBURGER MOBILE
+// ============================================
+
+function ouvrirMenuMobile() {
+    const sidebar  = document.getElementById('mobileSidebar');
+    const overlay  = document.getElementById('mobileOverlay');
+    const btn      = document.getElementById('hamburgerBtn');
+    if (!sidebar) return;
+    sidebar.classList.add('open');
+    overlay?.classList.add('visible');
+    btn?.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+}
+
+function fermerMenuMobile() {
+    const sidebar  = document.getElementById('mobileSidebar');
+    const overlay  = document.getElementById('mobileOverlay');
+    const btn      = document.getElementById('hamburgerBtn');
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    overlay?.classList.remove('visible');
+    btn?.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('hamburgerBtn')?.addEventListener('click', ouvrirMenuMobile);
+    document.getElementById('mobileCloseBtn')?.addEventListener('click', fermerMenuMobile);
+    document.getElementById('mobileOverlay')?.addEventListener('click', fermerMenuMobile);
+
+    // Fermer si lien mobile sélectionné
+    document.querySelectorAll('.mobile-nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) fermerMenuMobile();
+        });
+    });
+
+    // Fermer au resize si on passe en desktop
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) fermerMenuMobile();
+    });
+});

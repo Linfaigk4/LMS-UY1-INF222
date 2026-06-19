@@ -225,8 +225,61 @@
                 </svg>
             </button>
             <a href="deconnexion.php" class="btn-logout">Déconnexion</a>
+            <!-- Bouton hamburger — visible uniquement mobile -->
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
         </div>
     </div>
 </nav>
+
+<!-- Overlay mobile -->
+<div class="mobile-overlay" id="mobileOverlay"></div>
+
+<!-- Sidebar mobile -->
+<aside class="mobile-sidebar" id="mobileSidebar" role="navigation" aria-label="Menu mobile">
+    <div class="mobile-sidebar-header">
+        <a href="tableau_bord.php" class="nav-logo" style="font-size:1.1rem">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+                <path d="M16 2L2 9L16 16L30 9L16 2Z" fill="#2563eb"/>
+                <path d="M2 16L16 23L30 16" stroke="#2563eb" stroke-width="1.5" fill="none"/>
+            </svg>
+            GOL
+        </a>
+        <button class="mobile-close-btn" id="mobileCloseBtn" aria-label="Fermer le menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    </div>
+    <nav class="mobile-nav">
+        <a href="tableau_bord.php" class="mobile-nav-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Tableau de bord
+        </a>
+        <a href="index.php#modules" class="mobile-nav-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5V4.5z"/></svg>
+            Modules
+        </a>
+        <a href="certificat.php" class="mobile-nav-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Certificats
+        </a>
+        <a href="profil.php" class="mobile-nav-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mon profil
+        </a>
+        <div class="mobile-nav-divider"></div>
+        <a href="deconnexion.php" class="mobile-nav-link mobile-nav-logout">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Déconnexion
+        </a>
+    </nav>
+</aside>
 
 <main class="main-content">
