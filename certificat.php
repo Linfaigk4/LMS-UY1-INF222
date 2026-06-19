@@ -348,13 +348,13 @@ $page_title = 'Mes certificats - GOL';
 
 <div class="certificats-container">
     <div class="certificats-header">
-        <h1>🎓 Mes certificats</h1>
+        <h1><?= icone('certificat', 22) ?> Mes certificats</h1>
         <p>Retrouvez ici tous les certificats que vous avez obtenus sur GOL. Chaque certificat est unique et vérifiable.</p>
     </div>
 
     <?php if (!empty($modules_sans_certificat)): ?>
     <div class="modules-pending">
-        <h2>📜 Certificats disponibles à générer</h2>
+        <h2><?= icone('cours', 18) ?> Certificats disponibles à générer</h2>
         <p style="margin-bottom: var(--spacing-4);">Félicitations ! Vous avez complété ces modules. Générez votre certificat dès maintenant.</p>
         <div class="pending-list">
             <?php foreach ($modules_sans_certificat as $module): ?>
@@ -437,7 +437,7 @@ $page_title = 'Mes certificats - GOL';
         <div id="certificatPrintContent"></div>
         <div style="padding: var(--spacing-4); text-align: center;" class="no-print">
             <button onclick="imprimerCertificatCourant()" class="btn-generer" style="margin-right: var(--spacing-4);">
-                🖨️ Imprimer
+                <?= icone('imprimer', 16) ?> Imprimer
             </button>
             <button onclick="fermerModalCertificat()" class="btn-generer" style="background: var(--carte); color: var(--texte); border: 1px solid var(--bordure);">
                 Fermer

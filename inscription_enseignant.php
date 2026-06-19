@@ -301,7 +301,7 @@ $page_title = 'Inscription Enseignant - GOL';
 <div class="inscription-page">
     <div class="inscription-card animate-scaleIn">
         <div class="inscription-header">
-            <h2>🎓 Devenir enseignant sur GOL</h2>
+            <h2><?= icone('certificat', 22) ?> Devenir enseignant sur GOL</h2>
             <p>Partagez votre expertise et formez la prochaine génération</p>
         </div>
 

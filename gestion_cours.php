@@ -148,15 +148,15 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
 <div class="container">
     <a href="gestion_cours.php" class="back-link">← Retour aux cours</a>
 
-    <h1>📖 <?= htmlspecialchars($cours['titre_cours']) ?></h1>
+    <h1><?= icone('lecon', 18) ?> <?= htmlspecialchars($cours['titre_cours']) ?></h1>
     <p style="color: #64748b; margin-bottom: 24px;">Gestion des leçons (Texte, PDF, Vidéo)</p>
 
     <?php if ($message): ?>
-        <div class="alert alert-success">✅ <?= htmlspecialchars($message) ?></div>
+        <div class="alert alert-success"><?= icone('succes', 16) ?> <?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
     
     <?php if ($error): ?>
-        <div class="alert alert-error">❌ <?= htmlspecialchars($error) ?></div>
+        <div class="alert alert-error"><?= icone('erreur', 16) ?> <?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <?php if (!$show_form): ?>
@@ -178,9 +178,9 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
             <div class="form-group">
                 <label class="form-label">Type de contenu</label>
                 <select name="type_contenu" id="type_contenu" class="form-select">
-                    <option value="texte">📝 Texte</option>
-                    <option value="pdf">📄 PDF (upload)</option>
-                    <option value="video">🎥 Vidéo (upload ou lien)</option>
+                    <option value="texte"><?= icone('quiz', 18) ?> Texte</option>
+                    <option value="pdf"><?= icone('pdf', 16) ?> PDF (upload)</option>
+                    <option value="video"><?= icone('video', 16) ?> Vidéo (upload ou lien)</option>
                 </select>
             </div>
             
@@ -249,21 +249,21 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
                             <strong><?= ($index+1) . '. ' . htmlspecialchars($lecon['titre_lecon']) ?></strong>
                             <span class="badge"><?= $lecon['type_contenu'] ?></span>
                         </div>
-                        <button class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer cette leçon ?')) window.location.href='?cours_id=<?= $id_cours ?>&delete=<?= $lecon['id_lecon'] ?>'">🗑️ Supprimer</button>
+                        <button class="btn btn-danger btn-sm" onclick="if(confirm('Supprimer cette leçon ?')) window.location.href='?cours_id=<?= $id_cours ?>&delete=<?= $lecon['id_lecon'] ?>'"><?= icone('supprimer', 14) ?> Supprimer</button>
                     </div>
                     <?php if ($lecon['type_contenu'] === 'texte' && $lecon['contenu_texte']): ?>
                         <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 0.875rem; color: #475569;">
                             <?= htmlspecialchars(substr($lecon['contenu_texte'], 0, 150)) ?>...
                         </div>
                     <?php elseif ($lecon['type_contenu'] === 'pdf' && $lecon['fichier_pdf']): ?>
-                        <div style="margin-top: 8px; font-size: 0.875rem;">📄 PDF: <?= basename($lecon['fichier_pdf']) ?></div>
+                        <div style="margin-top: 8px; font-size: 0.875rem;"><?= icone('pdf', 16) ?> PDF: <?= basename($lecon['fichier_pdf']) ?></div>
                         <div style="margin-top: 4px;">
                             <a href="/GOL/<?= $lecon['fichier_pdf'] ?>" target="_blank" class="btn btn-primary btn-sm">Voir le PDF</a>
                         </div>
                     <?php elseif ($lecon['type_contenu'] === 'video' && $lecon['url_video']): ?>
-                        <div style="margin-top: 8px; font-size: 0.875rem;">🎥 Vidéo: <?= htmlspecialchars($lecon['url_video']) ?></div>
+                        <div style="margin-top: 8px; font-size: 0.875rem;"><?= icone('video', 16) ?> Vidéo: <?= htmlspecialchars($lecon['url_video']) ?></div>
                     <?php endif; ?>
-                    <div style="margin-top: 8px; font-size: 0.75rem; color: #64748b;">⏱️ <?= $lecon['duree'] ?? 0 ?> minutes</div>
+                    <div style="margin-top: 8px; font-size: 0.75rem; color: #64748b;"><?= icone('timer', 14) ?> <?= $lecon['duree'] ?? 0 ?> minutes</div>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>

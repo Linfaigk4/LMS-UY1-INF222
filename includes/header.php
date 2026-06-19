@@ -1,4 +1,10 @@
-<!DOCTYPE html>
+<?php
+/**
+ * GOL (Gugle Online Learning) - En-tête global
+ */
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../assets/svg/icons.php';
+?>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -283,3 +289,4 @@
 </aside>
 
 <main class="main-content">
+

@@ -372,15 +372,15 @@ $page_title = $evaluation['titre_evaluation'] . ' - GOL';
 <div class="evaluation-container">
     <!-- En-tête -->
     <div class="evaluation-header">
-        <h1 class="evaluation-title">📝 <?= htmlspecialchars($evaluation['titre_evaluation']) ?></h1>
+        <h1 class="evaluation-title"><?= icone('quiz', 18) ?> <?= htmlspecialchars($evaluation['titre_evaluation']) ?></h1>
         <p><?= htmlspecialchars($evaluation['description'] ?? 'Testez vos connaissances sur cette leçon.') ?></p>
         <div class="evaluation-meta">
-            <span class="meta-badge">🎯 Score requis : <?= $evaluation['note_requise'] ?>%</span>
-            <span class="meta-badge">❓ <?= count($questions) ?> questions</span>
+            <span class="meta-badge"><?= icone('notation', 16) ?> Score requis : <?= $evaluation['note_requise'] ?>%</span>
+            <span class="meta-badge"><?= icone('quiz', 16) ?> <?= count($questions) ?> questions</span>
             <?php if ($evaluation['duree']): ?>
-                <span class="meta-badge">⏱️ Durée : <?= $evaluation['duree'] ?> minutes</span>
+                <span class="meta-badge"><?= icone('timer', 14) ?> Durée : <?= $evaluation['duree'] ?> minutes</span>
             <?php endif; ?>
-            <span class="meta-badge">🔄 Tentative <?= $tentatives['nb_tentatives'] + 1 ?> / <?= $evaluation['tentative_max'] ?></span>
+            <span class="meta-badge"><?= icone('tentative', 16) ?> Tentative <?= $tentatives['nb_tentatives'] + 1 ?> / <?= $evaluation['tentative_max'] ?></span>
         </div>
     </div>
 
@@ -606,7 +606,7 @@ function demarrerTimerQuestion(q) {
     if (!el) return;
     timerQuestion = setInterval(() => {
         restant--;
-        if (el) el.textContent = '⏱ ' + restant + 's';
+        if (el) el.textContent = restant + 's';
         if (restant <= 0) {
             clearInterval(timerQuestion);
             // Question expirée : aucune réponse enregistrée = incorrecte

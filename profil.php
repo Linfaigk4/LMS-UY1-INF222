@@ -557,7 +557,7 @@ $page_title = 'Mon profil - GOL';
             <?php if ($role === 'etudiant' && !empty($modules_inscrits)): ?>
             <div class="profile-section">
                 <div class="section-title">
-                    📚 Mes modules et cours suivis
+                    <?= icone('cours', 18) ?> Mes modules et cours suivis
                 </div>
                 <div class="section-content">
                     <?php foreach ($modules_inscrits as $module): ?>
@@ -591,11 +591,11 @@ $page_title = 'Mon profil - GOL';
                                             </div>
                                             <div class="cours-status <?= ($cours['statut'] ?? 'non_commence') === 'termine' ? 'status-termine' : 'status-en_cours' ?>">
                                                 <?php if (($cours['statut'] ?? 'non_commence') === 'termine'): ?>
-                                                    ✅ Terminé
+                                                    <?= icone('succes', 16) ?> Terminé
                                                 <?php elseif (($cours['pourcentage'] ?? 0) > 0): ?>
-                                                    📚 En cours
+                                                    <?= icone('cours', 18) ?> En cours
                                                 <?php else: ?>
-                                                    📖 Non commencé
+                                                    <?= icone('lecon', 18) ?> Non commencé
                                                 <?php endif; ?>
                                                 <a href="cours.php?id=<?= $cours['id_cours'] ?>" style="float: right; color: #2563eb; text-decoration: none;">Continuer →</a>
                                             </div>
@@ -614,7 +614,7 @@ $page_title = 'Mon profil - GOL';
             <!-- Section Modification du profil -->
             <div class="profile-section">
                 <div class="section-title">
-                    ✏️ Modifier mon profil
+                    <?= icone('modifier', 14) ?> Modifier mon profil
                 </div>
                 <div class="section-content">
                     <?php if ($message): ?>
@@ -622,7 +622,7 @@ $page_title = 'Mon profil - GOL';
                     <?php endif; ?>
                     
                     <?php if ($error): ?>
-                        <div class="alert alert-error">⚠️ <?= htmlspecialchars($error) ?></div>
+                        <div class="alert alert-error"><?= icone('alerte', 16) ?> <?= htmlspecialchars($error) ?></div>
                     <?php endif; ?>
 
                     <form method="POST" action="">
@@ -687,7 +687,7 @@ $page_title = 'Mon profil - GOL';
             <?php if (!empty($demandes)): ?>
             <div class="profile-section">
                 <div class="section-title">
-                    📜 Historique des demandes
+                    <?= icone('cours', 18) ?> Historique des demandes
                 </div>
                 <div class="section-content">
                     <?php foreach ($demandes as $demande): ?>

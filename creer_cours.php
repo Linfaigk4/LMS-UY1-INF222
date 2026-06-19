@@ -89,14 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="gestion_cours.php" class="back-link">← Retour à la liste des cours</a>
     
     <div class="card">
-        <h1>📚 Créer un nouveau cours</h1>
+        <h1><?= icone('cours', 18) ?> Créer un nouveau cours</h1>
         
         <?php if ($message): ?>
-            <div class="alert alert-success">✅ <?= htmlspecialchars($message) ?></div>
+            <div class="alert alert-success"><?= icone('succes', 16) ?> <?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
         
         <?php if ($error): ?>
-            <div class="alert alert-error">❌ <?= htmlspecialchars($error) ?></div>
+            <div class="alert alert-error"><?= icone('erreur', 16) ?> <?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
         
         <form method="POST" action="">

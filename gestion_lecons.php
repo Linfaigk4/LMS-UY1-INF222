@@ -205,7 +205,7 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
     <div class="admin-header">
         <div>
             <a href="gestion_cours.php" style="color: #2563eb; text-decoration: none;">← Retour aux cours</a>
-            <h1 class="admin-title" style="margin-top: 16px;">📖 <?= htmlspecialchars($cours['titre_cours']) ?></h1>
+            <h1 class="admin-title" style="margin-top: 16px;"><?= icone('lecon', 18) ?> <?= htmlspecialchars($cours['titre_cours']) ?></h1>
             <p style="color: var(--texte-secondaire);">Gestion des leçons et du contenu</p>
         </div>
         <button class="btn-primary" onclick="openModal('addLeconModal')">
@@ -218,11 +218,11 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
     </div>
 
     <?php if ($message): ?>
-        <div class="alert alert-success">✅ <?= htmlspecialchars($message) ?></div>
+        <div class="alert alert-success"><?= icone('succes', 16) ?> <?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
     
     <?php if ($error): ?>
-        <div class="alert alert-error">❌ <?= htmlspecialchars($error) ?></div>
+        <div class="alert alert-error"><?= icone('erreur', 16) ?> <?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <div class="lecons-list">
@@ -241,13 +241,13 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
                         </div>
                         <div class="cours-actions">
                             <button class="btn-sm btn-sm-edit" onclick="editLecon(<?= htmlspecialchars(json_encode($lecon)) ?>)">
-                                ✏️ Modifier
+                                <?= icone('modifier', 14) ?> Modifier
                             </button>
                             <button class="btn-sm btn-sm-delete" onclick="if(confirm('Supprimer cette leçon ?')) window.location.href='?cours_id=<?= $id_cours ?>&delete=<?= $lecon['id_lecon'] ?>'">
-                                🗑️ Supprimer
+                                <?= icone('supprimer', 14) ?> Supprimer
                             </button>
                             <a href="gestion_quiz.php?lecon_id=<?= $lecon['id_lecon'] ?>&cours_id=<?= $id_cours ?>" class="btn-sm btn-sm-publish">
-                                📝 Gérer le quiz
+                                <?= icone('quiz', 18) ?> Gérer le quiz
                             </a>
                         </div>
                     </div>
@@ -258,15 +258,15 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
                             </div>
                         <?php elseif ($lecon['type_contenu'] === 'pdf' && $lecon['fichier_pdf']): ?>
                             <div class="lecon-preview">
-                                📄 Fichier PDF : <?= basename($lecon['fichier_pdf']) ?>
+                                <?= icone('pdf', 16) ?> Fichier PDF : <?= basename($lecon['fichier_pdf']) ?>
                             </div>
                         <?php elseif ($lecon['type_contenu'] === 'video' && $lecon['url_video']): ?>
                             <div class="lecon-preview">
-                                🎥 Vidéo : <?= htmlspecialchars($lecon['url_video']) ?>
+                                <?= icone('video', 16) ?> Vidéo : <?= htmlspecialchars($lecon['url_video']) ?>
                             </div>
                         <?php endif; ?>
                         <div class="cours-meta" style="margin-top: 12px;">
-                            <span>⏱️ <?= $lecon['duree'] ?? 0 ?> minutes</span>
+                            <span><?= icone('timer', 14) ?> <?= $lecon['duree'] ?? 0 ?> minutes</span>
                         </div>
                     </div>
                 </div>
