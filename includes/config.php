@@ -36,9 +36,16 @@ define('MAX_AVATAR_SIZE', 2 * 1024 * 1024); // 2 Mo
 date_default_timezone_set('Africa/Douala');
 
 // Connexion à la base de données
+// Sous XAMPP Linux, utiliser le socket Unix pour éviter SQLSTATE[HY000] [2002] Connection refused
+define('DB_SOCKET', '/opt/lampp/var/mysql/mysql.sock');
+
 try {
+    $dsn = file_exists(DB_SOCKET)
+        ? "mysql:unix_socket=" . DB_SOCKET . ";dbname=" . DB_NAME . ";charset=utf8mb4"
+        : "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+
     $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+        $dsn,
         DB_USER,
         DB_PASS,
         [
