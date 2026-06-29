@@ -1,7 +1,4 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 /**
  * GOL (Gugle Online Learning) - Tableau de bord multi-rôles
  * Développeur: ESSENGUE BILOA VICTORIEN MICHEL

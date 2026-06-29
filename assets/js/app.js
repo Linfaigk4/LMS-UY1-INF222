@@ -104,26 +104,6 @@ function fermerModal(modalId) {
 }
 
 // ============================================
-// MENU MOBILE
-// ============================================
-
-function ouvrirMenuMobile() {
-    const sidebar = document.getElementById('mobileSidebar');
-    if (sidebar) {
-        sidebar.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-function fermerMenuMobile() {
-    const sidebar = document.getElementById('mobileSidebar');
-    if (sidebar) {
-        sidebar.classList.remove('open');
-        document.body.style.overflow = '';
-    }
-}
-
-// ============================================
 // RECHERCHE EN TEMPS RÉEL
 // ============================================
 
@@ -288,16 +268,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.animate-on-scroll').forEach(el => {
         observer.observe(el);
     });
-    
-    console.log('GOL LMS - Initialisé avec succès');
-    console.log('Développeur: ESSENGUE BILOA VICTORIEN MICHEL (23U2628)');
 });
 
 // ============================================
 // ALIASES — compatibilité pages existantes
 // ============================================
-
-// Pages qui appellent openModal/closeModal au lieu de ouvrirModal/fermerModal
 function openModal(id)  { ouvrirModal(id); }
 function closeModal(id) { fermerModal(id); }
 

@@ -59,6 +59,8 @@ function connecterUtilisateur($email, $mot_de_passe) {
         $utilisateur = $stmt->fetch();
         
         if ($utilisateur && password_verify($mot_de_passe, $utilisateur['mot_de_passe'])) {
+            // Régénérer l'ID de session pour prévenir la fixation de session
+            session_regenerate_id(true);
             $_SESSION['id_utilisateur'] = $utilisateur['id_utilisateur'];
             $_SESSION['email'] = $utilisateur['email'];
             $_SESSION['nom'] = $utilisateur['nom'];

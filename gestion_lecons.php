@@ -9,8 +9,8 @@
 require_once 'includes/config.php';
 require_once 'includes/fonctions.php';
 
-// Vérifier si l'utilisateur est connecté et est enseignant
-if (!estConnecte() || !estEnseignant()) {
+// Vérifier si l'utilisateur est connecté et est enseignant ou promoteur ou super admin
+if (!estConnecte() || (!estEnseignant() && !estPromoteur() && !estSuperAdmin())) {
     header('Location: connexion.php');
     exit;
 }

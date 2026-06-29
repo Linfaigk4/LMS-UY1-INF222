@@ -6,9 +6,6 @@
  * Université de Yaoundé 1 - INF-L2
  */
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 require_once 'includes/config.php';
 require_once 'includes/fonctions.php';
 
