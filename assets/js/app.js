@@ -12,7 +12,7 @@
 function chargerTheme() {
     const theme = localStorage.getItem('gol_theme') || 'light';
     document.documentElement.setAttribute('data-theme', theme);
-    document.cookie = `gol_theme=${theme}; path=/; max-age=31536000`;
+    document.cookie = `gol_theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
 function changerTheme() {
@@ -21,7 +21,7 @@ function changerTheme() {
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('gol_theme', newTheme);
-    document.cookie = `gol_theme=${newTheme}; path=/; max-age=31536000`;
+    document.cookie = `gol_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
     
     afficherNotification(`Thème ${newTheme === 'dark' ? 'sombre' : 'clair'} activé`, 'info');
 }
@@ -313,7 +313,7 @@ function escapeHtml(text) {
 (function() {
     const t = localStorage.getItem('gol_theme') || 'light';
     document.documentElement.setAttribute('data-theme', t);
-    document.cookie = 'gol_theme=' + t + '; path=/; max-age=31536000';
+    document.cookie = 'gol_theme=' + t + '; path=/; max-age=31536000; SameSite=Lax';
 })();
 
 // ============================================

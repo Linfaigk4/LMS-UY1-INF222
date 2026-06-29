@@ -6,7 +6,19 @@
  * Université de Yaoundé 1 - INF-L2
  */
 
-// Activation des sessions
+// Configuration sécurisée des cookies de session
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+      || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+session_set_cookie_params([
+    'lifetime' => 0,              // Cookie de session (expire à la fermeture du navigateur)
+    'path'     => '/',
+    'domain'   => '',             // Domaine courant
+    'secure'   => $https,         // HTTPS uniquement si disponible
+    'httponly' => true,           // Inaccessible en JavaScript
+    'samesite' => 'Lax',          // Protection CSRF supplémentaire
+]);
+
 session_start();
 
 // Configuration de la base de données
@@ -55,7 +67,10 @@ try {
         ]
     );
 } catch(PDOException $e) {
-    die("Erreur de connexion à la base de données : " . $e->getMessage());
+    // Ne pas exposer les détails de la connexion en production
+    error_log('GOL - Erreur PDO : ' . $e->getMessage());
+    http_response_code(503);
+    die('<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Service indisponible</title></head><body style="font-family:sans-serif;text-align:center;padding:4rem;background:#f8fafc"><h1 style="color:#ef4444">Service temporairement indisponible</h1><p>Veuillez réessayer dans quelques instants.</p></body></html>');
 }
 
 // Thème (clair/sombre)
