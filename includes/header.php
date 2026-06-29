@@ -2,9 +2,10 @@
 /**
  * GOL (Gugle Online Learning) - En-tête global
  */
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/../assets/svg/icons.php';
-?>
+if (!function_exists('icone')) {
+    require_once __DIR__ . '/../assets/svg/icons.php';
+}
+?><!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
