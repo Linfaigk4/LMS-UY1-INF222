@@ -23,6 +23,7 @@ $error = '';
 // Traitement du formulaire de modification
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
+        verifierTokenCSRF();
         $pdo = connexionBDD();
         
         if ($_POST['action'] === 'update_profile') {
@@ -623,6 +624,7 @@ $page_title = 'Mon profil - GOL';
                     <?php endif; ?>
 
                     <form method="POST" action="">
+                        <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
                         <input type="hidden" name="action" value="update_profile">
                         <div class="form-row">
                             <div class="form-group">
@@ -654,6 +656,7 @@ $page_title = 'Mon profil - GOL';
                 </div>
                 <div class="section-content">
                     <form method="POST" action="">
+                        <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
                         <input type="hidden" name="action" value="request_change">
                         <div class="form-row">
                             <div class="form-group">

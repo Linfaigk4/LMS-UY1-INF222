@@ -31,11 +31,15 @@ function changerTheme() {
 // ============================================
 
 async function envoyerRequeteAjax(endpoint, method = 'GET', data = null) {
+    const csrfMeta  = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
     const options = {
         method: method,
         headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfToken
         },
         credentials: 'same-origin'
     };

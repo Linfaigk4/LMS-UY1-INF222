@@ -1553,3 +1553,36 @@ function obtenirDemandesCertificatsEnAttente() {
     ");
     return $stmt->fetchAll();
 }
+
+// ============================================
+// FONCTIONS SÉCURITÉ CSRF
+// ============================================
+
+/**
+ * Génère un token CSRF et le stocke en session.
+ * Retourne le token existant si déjà présent.
+ */
+function genererTokenCSRF(): string {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Vérifie le token CSRF soumis dans un formulaire POST.
+ * Utilise hash_equals() pour prévenir les timing attacks.
+ * En cas d'échec : renvoie HTTP 403 et arrête l'exécution.
+ */
+function verifierTokenCSRF(): void {
+    $token_soumis  = $_POST['csrf_token'] ?? '';
+    $token_session = $_SESSION['csrf_token'] ?? '';
+
+    if (empty($token_session) || empty($token_soumis) || !hash_equals($token_session, $token_soumis)) {
+        http_response_code(403);
+        echo '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Erreur 403</title></head><body style="font-family:sans-serif;text-align:center;padding:4rem;background:#f8fafc"><h1 style="color:#ef4444">403 — Accès refusé</h1><p>Token de sécurité invalide ou expiré.</p><a href="javascript:history.back()" style="color:#2563eb">← Retour</a></body></html>';
+        exit;
+    }
+    // Régénérer le token après validation (one-time use)
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}

@@ -18,6 +18,7 @@ if (estConnecte()) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifierTokenCSRF();
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     
@@ -428,6 +429,7 @@ $page_title = 'Connexion - GOL';
             </div>
 
             <form method="POST" action="" class="login-form">
+                <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
                 <?php if ($error): ?>
                     <div class="error-message">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

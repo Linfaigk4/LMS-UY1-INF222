@@ -35,6 +35,21 @@ if ($method === 'POST' && empty($_POST) && $input) {
     $_POST = array_merge($_POST, $input);
 }
 
+// Vérification CSRF pour toutes les requêtes POST AJAX
+if ($method === 'POST') {
+    $token_header  = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    $token_post    = $_POST['csrf_token'] ?? '';
+    $token_soumis  = !empty($token_header) ? $token_header : $token_post;
+    $token_session = $_SESSION['csrf_token'] ?? '';
+    if (empty($token_session) || empty($token_soumis) || !hash_equals($token_session, $token_soumis)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Token CSRF invalide']);
+        exit;
+    }
+    // Régénérer après validation (one-time use)
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $response = ['success' => false, 'message' => 'Action inconnue'];
 
 switch ($action) {

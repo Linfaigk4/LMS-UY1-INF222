@@ -30,6 +30,7 @@ $error = '';
 
 // Ajouter une leçon
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
+    verifierTokenCSRF();
     $titre         = trim($_POST['titre'] ?? '');
     $contenu_texte = trim($_POST['contenu_texte'] ?? '');
     $type_contenu  = $_POST['type_contenu'] ?? 'texte';
@@ -73,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Modifier une leçon
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit') {
+    verifierTokenCSRF();
     $id_lecon      = (int)($_POST['id_lecon'] ?? 0);
     $titre         = trim($_POST['titre'] ?? '');
     $contenu_texte = trim($_POST['contenu_texte'] ?? '');
@@ -284,6 +286,7 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
                 <button type="button" class="modal-close" onclick="closeModal('addLeconModal')">&times;</button>
             </div>
             <div class="modal-body">
+                <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
                 <input type="hidden" name="action" value="add">
                 <div class="form-group">
                     <label class="form-label">Titre de la leçon *</label>

@@ -25,6 +25,7 @@ $error = '';
 
 // Ajouter un module
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    verifierTokenCSRF();
     if ($_POST['action'] === 'add_module' && estSuperAdmin()) {
         $resultat = ajouterModule(
             $_POST['nom_module'],
@@ -871,6 +872,7 @@ $page_title = 'Administration - GOL';
                 <button type="button" class="modal-close" onclick="closeModal('addModuleModal')">&times;</button>
             </div>
             <div class="modal-body">
+                <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
                 <input type="hidden" name="action" value="add_module">
                 <div class="form-group">
                     <label class="form-label">Nom du module *</label>
@@ -912,6 +914,7 @@ $page_title = 'Administration - GOL';
                 <button type="button" class="modal-close" onclick="closeModal('addUserModal')">&times;</button>
             </div>
             <div class="modal-body">
+                <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
                 <input type="hidden" name="action" value="add_user">
                 <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-4);">
                     <div class="form-group">

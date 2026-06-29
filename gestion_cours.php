@@ -36,6 +36,7 @@ $show_form = isset($_GET['form']) ? true : false;
 
 // Ajouter une leçon
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
+    verifierTokenCSRF();
     $titre         = trim($_POST['titre'] ?? '');
     $contenu_texte = trim($_POST['contenu_texte'] ?? '');
     $type_contenu  = $_POST['type_contenu'] ?? 'texte';
@@ -165,6 +166,7 @@ $page_title = 'Gestion des leçons - ' . $cours['titre_cours'];
     <div class="card" style="margin-top: 20px;">
         <h3 style="margin-bottom: 20px;">Créer une nouvelle leçon</h3>
         <form method="POST" action="" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
             <input type="hidden" name="action" value="add">
             
             <div class="form-group">

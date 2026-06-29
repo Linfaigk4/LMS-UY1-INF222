@@ -16,6 +16,7 @@ $modules = $pdo->query("SELECT * FROM modules WHERE actif = 1 ORDER BY nom_modul
 
 // Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifierTokenCSRF();
     $titre = trim($_POST['titre'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $objectifs = trim($_POST['objectifs'] ?? '');
@@ -97,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         
         <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
             <div class="form-group">
                 <label class="form-label">Titre du cours *</label>
                 <input type="text" name="titre" class="form-input" required>

@@ -19,6 +19,7 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifierTokenCSRF();
     $nom = trim($_POST['nom'] ?? '');
     $prenom = trim($_POST['prenom'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -336,6 +337,7 @@ $page_title = 'Inscription Enseignant - GOL';
             </div>
 
             <form method="POST" action="" id="inscriptionForm">
+                <input type="hidden" name="csrf_token" value="<?= genererTokenCSRF() ?>">
                 <div class="form-row">
                     <div class="input-group">
                         <label class="input-label">Nom <span class="required">*</span></label>

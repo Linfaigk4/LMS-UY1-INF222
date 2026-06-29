@@ -11,6 +11,9 @@ if (!function_exists('icone')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($page_title) ? $page_title : 'GOL - Gugle Online Learning' ?></title>
+    <?php if (estConnecte()): ?>
+    <meta name="csrf-token" content="<?= genererTokenCSRF() ?>">
+    <?php endif; ?>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= defined('SITE_URL') ? SITE_URL : '/' ?>assets/css/style.css">
     <style>
