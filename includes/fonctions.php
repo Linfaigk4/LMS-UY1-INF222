@@ -1360,9 +1360,6 @@ function obtenirProgressionCours($id_utilisateur, $id_cours) {
     return $stmt->fetch();
 }
 
-// Fin du fichier fonctions.php
-?>
-
 // ============================================
 // FONCTION RECHERCHE GLOBALE
 // ============================================
