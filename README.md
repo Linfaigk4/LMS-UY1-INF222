@@ -43,15 +43,21 @@ GOL est une plateforme d'apprentissage en ligne complète permettant à des étu
 ---
 
 ## Technologies utilisées
-
-| Couche | Technologie |
-|---|---|
-| Backend | PHP 8+ |
-| Base de données | MySQL 8 (InnoDB / utf8mb4) |
-| Frontend | HTML5, CSS3, JavaScript ES2022 |
-| Serveur local | XAMPP (Apache + MySQL) |
-| Fonts | Google Fonts — Inter |
-| Icônes | SVG inline natifs |
+____________________________________________________
+| Couche          | Technologie                    |
+|--------------------------------------------------|
+| Backend         | PHP 8+                         |
+|--------------------------------------------------|
+| Base de données | MySQL 8 (InnoDB / utf8mb4)     |
+|--------------------------------------------------|
+| Frontend        | HTML5, CSS3, JavaScript ES2022 |
+|--------------------------------------------------|
+| Serveur local   | XAMPP (Apache + MySQL)         |
+|--------------------------------------------------|
+| Fonts           | Google Fonts — Inter           |
+|--------------------------------------------------|
+| Icônes          | SVG inline natifs              |
+----------------------------------------------------
 
 ---
 
@@ -117,12 +123,12 @@ Ouvrir : `http://localhost/GOL/`
 
 > Créer les comptes via phpMyAdmin ou les formulaires d'inscription, puis modifier le rôle en BDD.
 
-| Rôle | Email exemple | Rôle en BDD |
-|---|---|---|
-| Super Admin | admin@gol.cm | `super_admin` |
-| Promoteur | promoteur@gol.cm | `promoteur` |
-| Enseignant | prof@gol.cm | `enseignant` |
-| Étudiant | etudiant@gol.cm | `etudiant` |
+| Rôle        | Email exemple    | Rôle en BDD   |
+|-------------|------------------|---------------|
+| Super Admin | admin@gol.cm     | `super_admin` |
+| Promoteur   | promoteur@gol.cm | `promoteur`   |
+| Enseignant  | prof@gol.cm      | `enseignant`  |
+| Étudiant    | etudiant@gol.cm  | `etudiant`    |
 
 ---
 

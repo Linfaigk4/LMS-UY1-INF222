@@ -89,6 +89,7 @@ $statistiques = obtenirStatistiquesGlobales();
                     <span class="stat-label">Certificats délivrés</span>
                 </div>
             </div>
+        </div><!-- /.hero-content -->
         
         <div class="hero-visual animate-scaleIn">
             <div class="hero-card-3d">
@@ -272,7 +273,7 @@ $statistiques = obtenirStatistiquesGlobales();
         </div>
         
         <div class="modules-cta">
-            <a href="modules.php" class="btn-voir-tous">
+            <a href="index.php#modules" class="btn-voir-tous">
                 Voir tous les modules
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <line x1="5" y1="12" x2="19" y2="12"/>

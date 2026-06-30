@@ -224,7 +224,7 @@ $page_title = 'À propos - GOL';
     <!-- Notre histoire -->
     <div class="about-section">
         <h2>Notre histoire</h2>
-        <p>Fondée en 2024, GOL (Gugle Online Learning) est née de la volonté de rendre l'éducation accessible à tous, partout et à tout moment. Notre plateforme innovante combine technologie de pointe et pédagogie moderne pour offrir une expérience d'apprentissage unique.</p>
+        <p>Fondée en 2026, GOL (Gugle Online Learning) est née de la volonté de rendre l'éducation accessible à tous, partout et à tout moment. Notre plateforme innovante combine technologie de pointe et pédagogie moderne pour offrir une expérience d'apprentissage unique.</p>
         <p>Depuis notre lancement, nous avons formé plus de 1000 apprenants et collaboré avec des dizaines d'enseignants passionnés pour créer des contenus de qualité.</p>
     </div>
 

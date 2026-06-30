@@ -480,15 +480,6 @@ $page_title = 'Connexion - GOL';
                     Nouveau sur GOL ? <a href="choix_inscription.php">Créer un compte</a>
                 </div>
 
-                <!-- Dans le formulaire, avant la fermeture -->
-                <div class="login-divider">
-                    <span>OU</span>
-                </div>
-
-                <div class="register-link">
-                    Nouveau sur GOL ? <a href="choix_inscription.php">Créer un compte</a>
-                </div>
-
                 <!-- AJOUTEZ CE LIEN ICI -->
                 <div style="text-align: center; margin-top: 20px;">
                     <a href="index.php" style="color: rgba(255,255,255,0.6); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; transition: color 0.3s;">

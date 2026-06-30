@@ -585,6 +585,19 @@ switch ($action) {
             $response = ['success' => false, 'message' => 'Données manquantes'];
             break;
         }
+        // Vérification IDOR : l'option appartient-elle à un cours de l'enseignant ?
+        if (!estSuperAdmin()) {
+            $stmtV = $pdo->prepare("
+                SELECT o.id_option FROM options o
+                JOIN questions q ON o.id_question = q.id_question
+                JOIN evaluations e ON q.id_evaluation = e.id_evaluation
+                JOIN lecons l ON e.id_lecon = l.id_lecon
+                JOIN cours c ON l.id_cours = c.id_cours
+                WHERE o.id_option = ? AND c.id_enseignant = ?
+            ");
+            $stmtV->execute([$id_option, $_SESSION['id_utilisateur']]);
+            if (!$stmtV->fetch()) { $response = ['success' => false, 'message' => 'Accès refusé']; break; }
+        }
         $ok = modifierOption($id_option, $texte, $est_correcte);
         $response = ['success' => $ok, 'message' => $ok ? 'Option modifiée' : 'Erreur'];
         break;
@@ -596,6 +609,19 @@ switch ($action) {
         }
         $id_option = (int)($_POST['id_option'] ?? 0);
         if (!$id_option) { $response = ['success' => false, 'message' => 'ID manquant']; break; }
+        // Vérification IDOR : l'option appartient-elle à un cours de l'enseignant ?
+        if (!estSuperAdmin()) {
+            $stmtV = $pdo->prepare("
+                SELECT o.id_option FROM options o
+                JOIN questions q ON o.id_question = q.id_question
+                JOIN evaluations e ON q.id_evaluation = e.id_evaluation
+                JOIN lecons l ON e.id_lecon = l.id_lecon
+                JOIN cours c ON l.id_cours = c.id_cours
+                WHERE o.id_option = ? AND c.id_enseignant = ?
+            ");
+            $stmtV->execute([$id_option, $_SESSION['id_utilisateur']]);
+            if (!$stmtV->fetch()) { $response = ['success' => false, 'message' => 'Accès refusé']; break; }
+        }
         $ok = supprimerOption($id_option);
         $response = ['success' => $ok, 'message' => $ok ? 'Option supprimée' : 'Erreur'];
         break;

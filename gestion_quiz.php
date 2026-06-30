@@ -816,9 +816,15 @@ function toast(msg, type = 'info') {
 }
 
 function ajax(action, data = {}) {
+    const csrfMeta  = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
     return fetch('ajax.php?action=' + action, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfToken
+        },
         body: new URLSearchParams(data)
     }).then(r => r.json());
 }
