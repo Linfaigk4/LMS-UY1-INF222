@@ -121,58 +121,50 @@ if ($id_cours > 0) {
 }
 
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($page_title) ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-        .btn { display: inline-block; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; border: none; cursor: pointer; transition: all 0.3s; }
-        .btn-primary { background: #2563eb; color: white; }
-        .btn-primary:hover { background: #1d4ed8; }
-        .btn-secondary { background: #64748b; color: white; }
-        .btn-secondary:hover { background: #475569; }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.875rem; }
-        .form-input, .form-select, .form-textarea { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; font-family: inherit; }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        .form-textarea { resize: vertical; min-height: 100px; }
-        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .alert-success { background: #dcfce7; color: #166534; border: 1px solid #22c55e; }
-        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
-        .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
-        h1 { font-size: 1.75rem; margin-bottom: 8px; }
-        h2 { font-size: 1.25rem; margin-bottom: 16px; margin-top: 20px; }
-        h3 { font-size: 1rem; margin-bottom: 16px; }
-        .back-link { color: #2563eb; text-decoration: none; display: inline-block; margin-bottom: 20px; transition: all 0.3s; }
-        .back-link:hover { text-decoration: underline; }
-        .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
-        .course-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; transition: all 0.3s; }
-        .course-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
-        .course-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: #0f172a; }
-        .course-desc { font-size: 0.875rem; color: #475569; margin-bottom: 12px; line-height: 1.5; }
-        .course-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; background: #e2e8f0; margin-bottom: 12px; }
-        .course-actions { display: flex; gap: 8px; margin-top: 16px; }
-        .course-actions a { flex: 1; text-align: center; padding: 8px 12px; }
-        .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; }
-        .empty-state p { color: #64748b; margin-bottom: 20px; }
-        .lecon-item { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
-        .lecon-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-        .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; background: #e2e8f0; }
-        .help-text { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
+
+<style>
+    .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+    .btn { display: inline-block; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500; border: none; cursor: pointer; transition: all 0.3s; }
+    .btn-primary { background: var(--primaire); color: white; }
+    .btn-primary:hover { background: var(--primaire-sombre); }
+    .btn-secondary { background: var(--texte-tertiaire); color: white; }
+    .btn-secondary:hover { background: var(--texte-secondaire); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+    .card { background: var(--carte); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--carte-border); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.875rem; color: var(--texte); }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 10px; border: 1px solid var(--carte-border); border-radius: 8px; font-size: 0.875rem; font-family: inherit; background: var(--carte); color: var(--texte); }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--primaire); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .form-textarea { resize: vertical; min-height: 100px; }
+    .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .alert-success { background: rgba(34,197,94,0.1); color: #166534; border: 1px solid var(--succes); }
+    [data-theme="dark"] .alert-success { color: #86efac; }
+    .alert-error { background: rgba(239,68,68,0.1); color: #991b1b; border: 1px solid var(--danger); }
+    [data-theme="dark"] .alert-error { color: #fca5a5; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+    h1 { font-size: 1.75rem; margin-bottom: 8px; color: var(--texte); }
+    h2 { font-size: 1.25rem; margin-bottom: 16px; margin-top: 20px; color: var(--texte); }
+    h3 { font-size: 1rem; margin-bottom: 16px; color: var(--texte); }
+    .back-link { color: var(--primaire); text-decoration: none; display: inline-block; margin-bottom: 20px; transition: all 0.3s; }
+    .back-link:hover { text-decoration: underline; }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+    .course-card { background: var(--carte); border-radius: 12px; border: 1px solid var(--carte-border); padding: 20px; transition: all 0.3s; }
+    .course-card:hover { box-shadow: var(--ombre-md); transform: translateY(-2px); }
+    .course-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--texte); }
+    .course-desc { font-size: 0.875rem; color: var(--texte-secondaire); margin-bottom: 12px; line-height: 1.5; }
+    .course-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; background: var(--fond-secondaire); margin-bottom: 12px; }
+    .course-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .course-actions a { flex: 1; text-align: center; padding: 8px 12px; }
+    .empty-state { text-align: center; padding: 60px 20px; background: var(--carte); border-radius: 12px; border: 1px dashed var(--carte-border); }
+    .empty-state p { color: var(--texte-secondaire); margin-bottom: 20px; }
+    .lecon-item { background: var(--carte); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--carte-border); }
+    .lecon-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; background: var(--fond-secondaire); }
+    .help-text { font-size: 0.75rem; color: var(--texte-tertiaire); margin-top: 4px; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+</style>
 
 <div class="container">
 <?php if ($id_cours > 0): ?>
@@ -371,5 +363,5 @@ if ($id_cours > 0) {
 if (!is_dir(__DIR__ . '/uploads/pdf')) @mkdir(__DIR__ . '/uploads/pdf', 0777, true);
 if (!is_dir(__DIR__ . '/uploads/videos')) @mkdir(__DIR__ . '/uploads/videos', 0777, true);
 ?>
-</body>
-</html>
+
+<?php require_once 'includes/footer.php'; ?>
